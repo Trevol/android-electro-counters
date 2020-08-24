@@ -59,7 +59,7 @@ import kotlin.random.Random
 /** Activity that displays the camera and performs object detection on the incoming frames */
 class CameraActivity : AppCompatActivity() {
 
-    private lateinit var container: ConstraintLayout
+    //    private lateinit var container: ConstraintLayout
     private lateinit var bitmapBuffer: Bitmap
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -110,35 +110,6 @@ class CameraActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
-        container = findViewById(R.id.camera_container)
-
-        camera_capture_button.setOnClickListener {
-
-            // Disable all camera controls
-            it.isEnabled = false
-
-            if (pauseAnalysis) {
-                // If image analysis is in paused state, resume it
-                pauseAnalysis = false
-                image_predicted.visibility = View.GONE
-
-            } else {
-                // Otherwise, pause image analysis and freeze image
-                pauseAnalysis = true
-                val matrix = Matrix().apply {
-                    postRotate(imageRotationDegrees.toFloat())
-                    if (isFrontFacing) postScale(-1f, 1f)
-                }
-                val uprightImage = Bitmap.createBitmap(
-                    bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height, matrix, true
-                )
-                image_predicted.setImageBitmap(uprightImage)
-                image_predicted.visibility = View.VISIBLE
-            }
-
-            // Re-enable camera controls
-            it.isEnabled = true
-        }
     }
 
     /** Declare and bind preview and analysis use cases */
