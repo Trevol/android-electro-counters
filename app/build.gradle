@@ -64,9 +64,13 @@ dependencies {
     implementation "androidx.camera:camera-view:1.0.0-alpha12"
 
     // Tensorflow lite dependencies
-    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
-    implementation 'org.tensorflow:tensorflow-lite-gpu:0.0.0-nightly'
-    implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly'
+//    implementation 'org.tensorflow:tensorflow-lite:0.0.0-nightly'
+//    implementation 'org.tensorflow:tensorflow-lite-gpu:0.0.0-nightly'
+//    implementation 'org.tensorflow:tensorflow-lite-support:0.0.0-nightly'
+
+    implementation 'org.tensorflow:tensorflow-lite:2.3.0'
+    implementation 'org.tensorflow:tensorflow-lite-gpu:2.3.0'
+    implementation 'org.tensorflow:tensorflow-lite-support:0.1.0-rc1'
 
     testImplementation 'org.robolectric:robolectric:4.3.1'
     testImplementation 'junit:junit:4.13'

@@ -35,7 +35,7 @@ import com.tavrida.utils.camera.YuvToRgbConverter
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.gpu.GpuDelegate;
+import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
@@ -46,11 +46,9 @@ import org.tensorflow.lite.support.image.ops.Rot90Op
 import java.util.concurrent.Executors
 import kotlin.random.Random
 
-
 /** Activity that displays the camera and performs object detection on the incoming frames */
 class CameraActivity : AppCompatActivity() {
 
-    //    private lateinit var container: ConstraintLayout
     private lateinit var bitmapBuffer: Bitmap
 
     private val executor = Executors.newSingleThreadExecutor()
