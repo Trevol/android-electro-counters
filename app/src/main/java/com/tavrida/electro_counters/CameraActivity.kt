@@ -21,29 +21,21 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Matrix
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
 import android.util.Size
-import android.view.View
-import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
-import androidx.camera.core.AspectRatio
-import androidx.camera.core.CameraSelector
-import androidx.camera.core.ImageAnalysis
-import androidx.camera.core.Preview
+import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.electro_counters.R
 import com.tavrida.utils.camera.YuvToRgbConverter
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
-import org.tensorflow.lite.nnapi.NnApiDelegate
+import org.tensorflow.lite.gpu.GpuDelegate;
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
@@ -52,7 +44,6 @@ import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.image.ops.ResizeWithCropOrPadOp
 import org.tensorflow.lite.support.image.ops.Rot90Op
 import java.util.concurrent.Executors
-import kotlin.math.min
 import kotlin.random.Random
 
 
@@ -67,9 +58,7 @@ class CameraActivity : AppCompatActivity() {
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
-    private val isFrontFacing get() = lensFacing == CameraSelector.LENS_FACING_FRONT
 
-    private var pauseAnalysis = false
     private var imageRotationDegrees: Int = 0
     private val tfImageBuffer = TensorImage(DataType.UINT8)
 
@@ -90,7 +79,8 @@ class CameraActivity : AppCompatActivity() {
     private val tflite by lazy {
         Interpreter(
             FileUtil.loadMappedFile(this, MODEL_PATH),
-            Interpreter.Options().addDelegate(NnApiDelegate())
+//            Interpreter.Options().addDelegate(NnApiDelegate())
+            Interpreter.Options().addDelegate(GpuDelegate())
         )
     }
 
@@ -112,13 +102,9 @@ class CameraActivity : AppCompatActivity() {
         setContentView(R.layout.activity_camera)
     }
 
-    /** Declare and bind preview and analysis use cases */
-    @SuppressLint("UnsafeExperimentalUsageError")
     private fun bindCameraUseCases() = view_finder.post {
-
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener(Runnable {
-
             // Camera provider is now guaranteed to be available
             val cameraProvider = cameraProviderFuture.get()
 
@@ -135,100 +121,73 @@ class CameraActivity : AppCompatActivity() {
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
-            var frameCounter = 0
-            var lastFpsTimestamp = System.currentTimeMillis()
             val converter = YuvToRgbConverter(this)
 
-            imageAnalysis.setAnalyzer(executor, ImageAnalysis.Analyzer { image ->
-                if (!::bitmapBuffer.isInitialized) {
-                    // The image rotation and RGB image buffer are initialized only once
-                    // the analyzer has started running
-                    imageRotationDegrees = image.imageInfo.rotationDegrees
-                    bitmapBuffer = Bitmap.createBitmap(
-                        image.width, image.height, Bitmap.Config.ARGB_8888
-                    )
-                }
+            imageAnalysis.setAnalyzer(
+                executor,
+                ImageAnalysis.Analyzer { image -> analyzeImage(image, converter) })
 
-                // Early exit: image analysis is in paused state
-                if (pauseAnalysis) {
-                    image.close()
-                    return@Analyzer
-                }
-
-                val t0 = System.currentTimeMillis()
-                // Convert the image to RGB and place it in our shared buffer
-                image.use { converter.yuvToRgb(image.image!!, bitmapBuffer) }
-
-                val tYuvToRgb = System.currentTimeMillis()
-                // Process the image in Tensorflow
-                val tfImage = tfImageProcessor.process(tfImageBuffer.apply { load(bitmapBuffer) })
-
-                val tImageProcessor = System.currentTimeMillis()
-                // Perform the object detection for the current frame
-                val predictions = detector.predict(tfImage)
-
-                val tPredict = System.currentTimeMillis()
-
-                val txt = "${tPredict - tImageProcessor}   ${tPredict - t0} ${tImageProcessor - t0}"
-                Log.d("TTT-TTT-TTT", txt)
-                view_finder.post { text_timings.text = txt }
-
-                // Report only the top prediction
-                reportPrediction(predictions.maxBy { it.score })
-
-                // Compute the FPS of the entire pipeline
-                val frameCount = 10
-                if (++frameCounter % frameCount == 0) {
-                    frameCounter = 0
-                    val now = System.currentTimeMillis()
-                    val delta = now - lastFpsTimestamp
-                    val fps = 1000 * frameCount.toFloat() / delta
-                    Log.d(TAG, "FPS: ${"%.02f".format(fps)}")
-                    lastFpsTimestamp = now
-                }
-            })
-
-            // Create a new camera selector each time, enforcing lens facing
             val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
 
-            // Apply declared configs to CameraX using the same lifecycle owner
             cameraProvider.unbindAll()
             val camera = cameraProvider.bindToLifecycle(
                 this as LifecycleOwner, cameraSelector, preview, imageAnalysis
             )
 
-            // Use the camera object to link our preview use case with the view
             preview.setSurfaceProvider(view_finder.createSurfaceProvider())
 
         }, ContextCompat.getMainExecutor(this))
     }
 
+    @SuppressLint("UnsafeExperimentalUsageError")
+    fun analyzeImage(image: ImageProxy, converter: YuvToRgbConverter) {
+        if (!::bitmapBuffer.isInitialized) {
+            // The image rotation and RGB image buffer are initialized only once
+            // the analyzer has started running
+            imageRotationDegrees = image.imageInfo.rotationDegrees
+            bitmapBuffer = Bitmap.createBitmap(
+                image.width, image.height, Bitmap.Config.ARGB_8888
+            )
+        }
+
+        val t0 = System.currentTimeMillis()
+
+        image.use { converter.yuvToRgb(image.image!!, bitmapBuffer) }
+        val tfImage = tfImageProcessor.process(tfImageBuffer.apply { load(bitmapBuffer) })
+        val predictions = detector.predict(tfImage)
+
+        val t1 = System.currentTimeMillis()
+
+        val txt = "Process frame in ${t1 - t0}ms"
+        Log.d(TAG, txt)
+        // view_finder.post { text_timings.text = txt }
+
+        // Report only the top prediction
+        reportPrediction(predictions.maxBy { it.score })
+    }
+
     private fun reportPrediction(
         prediction: ObjectDetectionHelper.ObjectPrediction?
-    ) = view_finder.post {
+    ) = view_predictions.post {
 
-        // Early exit: if prediction is not good enough, don't report it
         if (prediction == null || prediction.score < ACCURACY_THRESHOLD) {
-            box_prediction.visibility = View.GONE
-            text_prediction.visibility = View.GONE
             return@post
         }
 
         // Location has to be mapped to our local coordinates
         val location = mapOutputCoordinates(prediction.location)
+        view_predictions.showLocations(listOf(location))
+        // val predictionText = "${"%.2f".format(prediction.score)} ${prediction.label}"
+        // text_prediction.text = predictionText
+        // (box_prediction.layoutParams as ViewGroup.MarginLayoutParams).apply {
+        //     topMargin = location.top.toInt()
+        //     leftMargin = location.left.toInt()
+        //     width = min(view_finder.width, location.right.toInt() - location.left.toInt())
+        //     height = min(view_finder.height, location.bottom.toInt() - location.top.toInt())
+        // }
 
-        // Update the text and UI
-        text_prediction.text = "${"%.2f".format(prediction.score)} ${prediction.label}"
-        (box_prediction.layoutParams as ViewGroup.MarginLayoutParams).apply {
-            topMargin = location.top.toInt()
-            leftMargin = location.left.toInt()
-            width = min(view_finder.width, location.right.toInt() - location.left.toInt())
-            height = min(view_finder.height, location.bottom.toInt() - location.top.toInt())
-        }
-
-        // Make sure all UI elements are visible
-        box_prediction.visibility = View.VISIBLE
-        text_prediction.visibility = View.VISIBLE
+        // box_prediction.visibility = View.VISIBLE
+        // text_prediction.visibility = View.VISIBLE
     }
 
     /**
@@ -245,37 +204,24 @@ class CameraActivity : AppCompatActivity() {
             location.bottom * view_finder.height
         )
 
-        // Step 2: compensate for camera sensor orientation and mirroring
-        val isFrontFacing = lensFacing == CameraSelector.LENS_FACING_FRONT
-        val correctedLocation = if (isFrontFacing) {
-            RectF(
-                view_finder.width - previewLocation.right,
-                previewLocation.top,
-                view_finder.width - previewLocation.left,
-                previewLocation.bottom
-            )
-        } else {
-            previewLocation
-        }
-
-        // Step 3: compensate for 1:1 to 4:3 aspect ratio conversion + small margin
+        // Step 2: compensate for 1:1 to 4:3 aspect ratio conversion + small margin
         val margin = 0.1f
         val requestedRatio = 4f / 3f
-        val midX = (correctedLocation.left + correctedLocation.right) / 2f
-        val midY = (correctedLocation.top + correctedLocation.bottom) / 2f
+        val midX = (previewLocation.left + previewLocation.right) / 2f
+        val midY = (previewLocation.top + previewLocation.bottom) / 2f
         return if (view_finder.width < view_finder.height) {
             RectF(
-                midX - (1f + margin) * requestedRatio * correctedLocation.width() / 2f,
-                midY - (1f - margin) * correctedLocation.height() / 2f,
-                midX + (1f + margin) * requestedRatio * correctedLocation.width() / 2f,
-                midY + (1f - margin) * correctedLocation.height() / 2f
+                midX - (1f + margin) * requestedRatio * previewLocation.width() / 2f,
+                midY - (1f - margin) * previewLocation.height() / 2f,
+                midX + (1f + margin) * requestedRatio * previewLocation.width() / 2f,
+                midY + (1f - margin) * previewLocation.height() / 2f
             )
         } else {
             RectF(
-                midX - (1f - margin) * correctedLocation.width() / 2f,
-                midY - (1f + margin) * requestedRatio * correctedLocation.height() / 2f,
-                midX + (1f - margin) * correctedLocation.width() / 2f,
-                midY + (1f + margin) * requestedRatio * correctedLocation.height() / 2f
+                midX - (1f - margin) * previewLocation.width() / 2f,
+                midY - (1f + margin) * requestedRatio * previewLocation.height() / 2f,
+                midX + (1f - margin) * previewLocation.width() / 2f,
+                midY + (1f + margin) * requestedRatio * previewLocation.height() / 2f
             )
         }
     }
