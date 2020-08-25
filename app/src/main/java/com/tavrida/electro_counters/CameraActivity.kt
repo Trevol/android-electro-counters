@@ -36,7 +36,6 @@ import kotlinx.android.synthetic.main.activity_camera.*
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.GpuDelegate
-import org.tensorflow.lite.nnapi.NnApiDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
@@ -160,18 +159,18 @@ class CameraActivity : AppCompatActivity() {
         Log.d(TAG, "Process frame in $timingTxt")
         text_timings.post { text_timings.text = timingTxt }
 
-        reportPrediction(predictions.maxBy { it.score })
+        showPredictions(predictions.filter { it.score >= ACCURACY_THRESHOLD })
     }
 
-    private fun reportPrediction(prediction: ObjectDetectionHelper.ObjectPrediction?) =
-        view_predictions.post {
-            if (prediction == null || prediction.score < ACCURACY_THRESHOLD) {
-                return@post
-            }
-
-            val location = mapOutputCoordinates(prediction.location)
-            view_predictions.showLocations(listOf(location))
+    private fun showPredictions(predictions: List<ObjectDetectionHelper.ObjectPrediction>) {
+        if (predictions.isEmpty()) {
+            return
         }
+        view_predictions.post {
+            val locations = predictions.map { mapOutputCoordinates(it.location) }
+            view_predictions.showLocations(locations)
+        }
+    }
 
     private fun mapOutputCoordinates(location: RectF): RectF {
 
