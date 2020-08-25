@@ -156,9 +156,9 @@ class CameraActivity : AppCompatActivity() {
 
         val t1 = System.currentTimeMillis()
 
-        val txt = "Process frame in ${t1 - t0}ms"
-        Log.d(TAG, txt)
-        // view_finder.post { text_timings.text = txt }
+        val timingTxt = "${t1 - t0}ms"
+        Log.d(TAG, "Process frame in $timingTxt")
+        text_timings.post { text_timings.text = timingTxt }
 
         // Report only the top prediction
         reportPrediction(predictions.maxBy { it.score })
