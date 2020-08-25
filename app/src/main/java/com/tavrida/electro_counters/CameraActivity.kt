@@ -36,6 +36,7 @@ import kotlinx.android.synthetic.main.activity_camera.*
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.GpuDelegate
+import org.tensorflow.lite.nnapi.NnApiDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.NormalizeOp
 import org.tensorflow.lite.support.image.ImageProcessor
@@ -75,11 +76,10 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private val tflite by lazy {
-        Interpreter(
-            FileUtil.loadMappedFile(this, MODEL_PATH),
-//            Interpreter.Options().addDelegate(NnApiDelegate())
-            Interpreter.Options().addDelegate(GpuDelegate())
-        )
+        val opts = Interpreter.Options()
+            // .addDelegate(NnApiDelegate())
+            .addDelegate(GpuDelegate())
+        Interpreter(FileUtil.loadMappedFile(this, MODEL_PATH), opts)
     }
 
     private val detector by lazy {
@@ -238,7 +238,10 @@ class CameraActivity : AppCompatActivity() {
         private val TAG = CameraActivity::class.java.simpleName
 
         private const val ACCURACY_THRESHOLD = 0.5f
+
         private const val MODEL_PATH = "coco_ssd_mobilenet_v1_1.0_quant.tflite"
+
+        // private const val MODEL_PATH = "mobile_ssd_v2_float_coco.tflite"
         private const val LABELS_PATH = "coco_ssd_mobilenet_v1_1.0_labels.txt"
     }
 }
