@@ -1,13 +1,11 @@
-package com.tavrida.electro_counters
+package com.tavrida.electro_counters.detection.tflite
 
 import android.graphics.RectF
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.image.TensorImage
 
 
-class ObjectDetectionHelper(private val tflite: Interpreter, private val labels: List<String>) {
-
-    data class ObjectPrediction(val location: RectF, val label: String, val score: Float)
+class ObjectDetector(private val tflite: Interpreter, private val labels: List<String>) {
 
     private val locations = arrayOf(Array(OBJECT_COUNT) { FloatArray(4) })
     private val labelIndices = arrayOf(FloatArray(OBJECT_COUNT))
