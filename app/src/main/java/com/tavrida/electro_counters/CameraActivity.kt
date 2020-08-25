@@ -160,41 +160,21 @@ class CameraActivity : AppCompatActivity() {
         Log.d(TAG, "Process frame in $timingTxt")
         text_timings.post { text_timings.text = timingTxt }
 
-        // Report only the top prediction
         reportPrediction(predictions.maxBy { it.score })
     }
 
-    private fun reportPrediction(
-        prediction: ObjectDetectionHelper.ObjectPrediction?
-    ) = view_predictions.post {
+    private fun reportPrediction(prediction: ObjectDetectionHelper.ObjectPrediction?) =
+        view_predictions.post {
+            if (prediction == null || prediction.score < ACCURACY_THRESHOLD) {
+                return@post
+            }
 
-        if (prediction == null || prediction.score < ACCURACY_THRESHOLD) {
-            return@post
+            val location = mapOutputCoordinates(prediction.location)
+            view_predictions.showLocations(listOf(location))
         }
 
-        // Location has to be mapped to our local coordinates
-        val location = mapOutputCoordinates(prediction.location)
-        view_predictions.showLocations(listOf(location))
-        // val predictionText = "${"%.2f".format(prediction.score)} ${prediction.label}"
-        // text_prediction.text = predictionText
-        // (box_prediction.layoutParams as ViewGroup.MarginLayoutParams).apply {
-        //     topMargin = location.top.toInt()
-        //     leftMargin = location.left.toInt()
-        //     width = min(view_finder.width, location.right.toInt() - location.left.toInt())
-        //     height = min(view_finder.height, location.bottom.toInt() - location.top.toInt())
-        // }
-
-        // box_prediction.visibility = View.VISIBLE
-        // text_prediction.visibility = View.VISIBLE
-    }
-
-    /**
-     * Helper function used to map the coordinates for objects coming out of
-     * the model into the coordinates that the user sees on the screen.
-     */
     private fun mapOutputCoordinates(location: RectF): RectF {
 
-        // Step 1: map location to the preview coordinates
         val previewLocation = RectF(
             location.left * view_finder.width,
             location.top * view_finder.height,
@@ -226,7 +206,6 @@ class CameraActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-
         // Request permissions each time the app resumes, since they can be revoked at any time
         if (hasPermissions(this)) {
             bindCameraUseCases()
