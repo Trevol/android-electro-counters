@@ -6,16 +6,21 @@ import android.content.pm.PackageManager
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
 import com.tavrida.electro_counters.detection.tflite.ObjectDetectionManager
 import com.tavrida.electro_counters.detection.tflite.ObjectPrediction
 import kotlinx.android.synthetic.main.activity_camera.*
+import org.opencv.core.Mat
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 /** Activity that displays the camera and performs object detection on the incoming frames */
@@ -27,12 +32,14 @@ class CameraActivity : AppCompatActivity() {
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
 
-    private lateinit var detector: ObjectDetectionManager
+    private val detectorProvider by lazy {
+        TwoStageDigitsDetectorProvider(this)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
-        detector = ObjectDetectionManager(this)
+        detectorProvider.ensureDetector()
     }
 
     private fun bindCameraUseCases() = view_finder.post {
@@ -67,6 +74,8 @@ class CameraActivity : AppCompatActivity() {
 
             preview.setSurfaceProvider(view_finder.createSurfaceProvider())
 
+            view_finder.afterMeasured { setupAutoFocus(view_finder, camera!!) }
+
         }, ContextCompat.getMainExecutor(this))
     }
 
@@ -74,7 +83,7 @@ class CameraActivity : AppCompatActivity() {
     fun analyzeImage(image: ImageProxy) {
         val t0 = System.currentTimeMillis()
 
-        val predictions = detector.detect(image)
+        val predictions = detectorProvider.detector.detect(image)
 
         val t1 = System.currentTimeMillis()
 
@@ -158,5 +167,33 @@ class CameraActivity : AppCompatActivity() {
 
     companion object {
         private val TAG = CameraActivity::class.java.simpleName
+
+        inline fun View.afterMeasured(crossinline block: () -> Unit) {
+            viewTreeObserver.addOnGlobalLayoutListener(object :
+                ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    if (measuredWidth > 0 && measuredHeight > 0) {
+                        viewTreeObserver.removeOnGlobalLayoutListener(this)
+                        block()
+                    }
+                }
+            })
+        }
+
+        fun setupAutoFocus(viewFinder: View, camera: Camera) {
+            val width = viewFinder.width.toFloat()
+            val height = viewFinder.height.toFloat()
+
+            val factory = SurfaceOrientedMeteringPointFactory(width, height)
+            val cx = width / 2
+            val cy = height / 2
+            val afPoint = factory.createPoint(cx, cy)
+
+            val focusMeteringAction =
+                FocusMeteringAction.Builder(afPoint, FocusMeteringAction.FLAG_AF)
+                    .setAutoCancelDuration(1, TimeUnit.SECONDS)
+                    .build()
+            camera.cameraControl.startFocusAndMetering(focusMeteringAction)
+        }
     }
 }

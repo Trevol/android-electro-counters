@@ -3,6 +3,7 @@ package com.tavrida.ElectroCounters.detection
 import android.content.Context
 import com.tavrida.utils.Asset
 import org.opencv.android.OpenCVLoader
+import org.opencv.core.Mat
 
 class TwoStageDigitsDetectorProvider(context: Context) {
     val detector by lazy { instance.readDetector(context) }
@@ -24,7 +25,8 @@ class TwoStageDigitsDetectorProvider(context: Context) {
 
             val detector = TwoStageDigitsDetector(
                 screenDetector, digitsDetector,
-                Asset.fileInDownloads(storageDir)
+                context,
+                null
             )
             return detector
         }
