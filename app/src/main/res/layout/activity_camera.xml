@@ -16,8 +16,7 @@
         android:id="@+id/view_predictions"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#00000000">
-    </com.tavrida.electro_counters.ObjectPredictionsView>
+        android:background="#00000000"></com.tavrida.electro_counters.ObjectPredictionsView>
 
     <TextView
         android:id="@+id/text_timings"
@@ -27,9 +26,9 @@
         android:layout_marginTop="1dp"
         android:background="@android:color/white"
         android:text="--"
-        android:textSize="7pt"
         android:textAllCaps="false"
         android:textAppearance="@style/TextAppearance.AppCompat.Display1"
+        android:textSize="7pt"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 </FrameLayout>

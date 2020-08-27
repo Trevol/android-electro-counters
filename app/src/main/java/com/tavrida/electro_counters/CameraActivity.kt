@@ -14,9 +14,11 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.tavrida.ElectroCounters.detection.ObjectDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
 import com.tavrida.electro_counters.detection.tflite.ObjectDetectionManager
 import com.tavrida.electro_counters.detection.tflite.ObjectPrediction
+import com.tavrida.utils.toDisplayStr
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.opencv.core.Mat
 import java.util.concurrent.Executors
@@ -91,7 +93,27 @@ class CameraActivity : AppCompatActivity() {
         Log.d(TAG, "Process frame in $timingTxt")
         text_timings.post { text_timings.text = timingTxt }
 
-        showPredictions(predictions)
+        showDetectionResult(predictions)
+    }
+
+    private fun showDetectionResult(predictions: Collection<ObjectDetectionResult>) {
+        if (predictions.isNotEmpty()) {
+            Log.d("PRED-PRED", "=============================")
+            for (p in predictions) {
+                Log.d("PRED-PRED", "${p.classId} ${p.classScore} ${p.box.toDisplayStr()}")
+            }
+        }
+        val locations = predictions.map {
+            val b = it.box
+            RectF(
+                b.x.toFloat(),
+                b.y.toFloat(),
+                (b.x + b.width).toFloat(),
+                (b.y + b.height).toFloat()
+            )
+        }
+        view_predictions.showLocations(locations)
+
     }
 
     private fun showPredictions(predictions: List<ObjectPrediction>) {

@@ -3,7 +3,6 @@ package com.tavrida.ElectroCounters.detection
 import android.content.Context
 import com.tavrida.utils.Asset
 import org.opencv.android.OpenCVLoader
-import org.opencv.core.Mat
 
 class TwoStageDigitsDetectorProvider(context: Context) {
     val detector by lazy { instance.readDetector(context) }
@@ -15,6 +14,7 @@ class TwoStageDigitsDetectorProvider(context: Context) {
     private object instance {
         private lateinit var _detector: TwoStageDigitsDetector
         private fun createDetector(context: Context): TwoStageDigitsDetector {
+            // TODO("single instance only for initialized darknet detectors")
             val screenCfgFile = Asset.getFilePath(context, screenModelCfg, true)
             val screenModel = Asset.getFilePath(context, screenModelWeights, true)
             val screenDetector = DarknetDetector(screenCfgFile, screenModel, 320)

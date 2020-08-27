@@ -107,6 +107,7 @@ class DarknetDetector {
             return Dnn.readNetFromDarknet(cfgFile, darknetModel).apply {
                 setPreferableBackend(Dnn.DNN_BACKEND_OPENCV)
                 setPreferableTarget(Dnn.DNN_TARGET_CPU)
+                // setPreferableTarget(Dnn.DNN_TARGET_OPENCL)
             }
         }
 
@@ -129,4 +130,3 @@ class DarknetDetector {
     }
 }
 
-data class ObjectDetectionResult(val classId: Int, val classScore: Float, val box: Rect2d)

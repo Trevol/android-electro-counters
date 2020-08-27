@@ -20,7 +20,7 @@ class ObjectPredictionsView : View {
         strokeWidth = 2f
     }
 
-    var locations: List<RectF> = listOf()
+    var locations: Collection<RectF> = listOf()
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
@@ -29,9 +29,9 @@ class ObjectPredictionsView : View {
         }
     }
 
-    fun showLocations(locations: List<RectF>) {
+    fun showLocations(locations: Collection<RectF>) {
         this.locations = locations
-        invalidate()
+        postInvalidate()
     }
 
 

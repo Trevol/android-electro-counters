@@ -4,8 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import androidx.camera.core.ImageProxy
-import com.tavrida.electro_counters.detection.tflite.ObjectDetectionManager
-import com.tavrida.electro_counters.detection.tflite.ObjectPrediction
 import com.tavrida.utils.*
 import com.tavrida.utils.camera.YuvToRgbConverter
 import org.opencv.android.Utils
@@ -15,6 +13,7 @@ import org.opencv.core.Point
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.File
+import java.io.FileOutputStream
 
 class TwoStageDigitsDetector(
     val screenDetector: DarknetDetector,
@@ -22,7 +21,6 @@ class TwoStageDigitsDetector(
     val context: Context,
     storageDirectory: File?
 ) {
-    // val storage = if (storageDirectory != null) CounterDetectionStorage(storageDirectory) else null
     val storage = storageDirectory?.let { CounterDetectionStorage(storageDirectory) }
 
     private var imageRotationDegrees: Int = 0
@@ -31,9 +29,10 @@ class TwoStageDigitsDetector(
     private val rgbMatBuffer = Mat()
 
     private val converter = YuvToRgbConverter(context)
+    // var count = 0
 
     @SuppressLint("UnsafeExperimentalUsageError")
-    fun detect(yuvImage: ImageProxy): List<ObjectPrediction> {
+    fun detect(yuvImage: ImageProxy): Collection<ObjectDetectionResult> {
         if (!::bitmapBuffer.isInitialized) {
             // The image rotation and RGB image buffer are initialized only once
             // the analyzer has started running
@@ -42,19 +41,17 @@ class TwoStageDigitsDetector(
                 yuvImage.width, yuvImage.height, Bitmap.Config.ARGB_8888
             )
         }
+        // TODO("ROTATE image!!!!")
 
         yuvImage.use { converter.yuvToRgb(yuvImage.image!!, bitmapBuffer) }
         Utils.bitmapToMat(bitmapBuffer, rgbaMatBuffer)
         (rgbaMatBuffer.type() == CvType.CV_8UC4).assert()
         Imgproc.cvtColor(rgbaMatBuffer, rgbMatBuffer, Imgproc.COLOR_RGBA2RGB)
 
+        // saveFrame(context, count, bitmapBuffer, rgbMatBuffer)
+        // count++
 
-
-        return listOf()
-
-        // val tfImage = tfImageProcessor.process(tfImageBuffer.apply { load(bitmapBuffer) })
-        // val predictions = ObjectDetectionManager.detector.predict(tfImage)
-        // return predictions.filter { it.score >= ObjectDetectionManager.ACCURACY_THRESHOLD }
+        return screenDetector.detect(rgbMatBuffer).detections
     }
 
 
@@ -146,6 +143,20 @@ class TwoStageDigitsDetector(
     )
 
     companion object {
+        fun saveFrame(context: Context, count: Int, bitmapBuffer: Bitmap, rgbMatBuffer: Mat) {
+            // val framesDir = File(context.filesDir, "frames")
+            val framesDir = Asset.fileInDownloads("frames")
+            framesDir.mkdirs()
+
+            FileOutputStream(File(framesDir, "${count}_bitmap.png")).use {
+                bitmapBuffer.compress(Bitmap.CompressFormat.PNG, 100, it)
+            }
+            Imgcodecs.imwrite(
+                File(framesDir, "${count}_opencv.png").absolutePath,
+                rgbMatBuffer.rgb2bgr()
+            )
+        }
+
         const val screenClassId = 1
         private val bgrRed = Scalar(0, 0, 255)
         private val bgrGreen = Scalar(0, 255, 0)
