@@ -30,6 +30,9 @@ class ObjectPredictionsView : View {
     }
 
     fun showLocations(locations: Collection<RectF>) {
+        if (locations.isEmpty() && this.locations.isEmpty()){
+            return
+        }
         this.locations = locations
         postInvalidate()
     }
