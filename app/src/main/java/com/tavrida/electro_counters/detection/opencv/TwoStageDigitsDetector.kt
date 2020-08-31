@@ -3,10 +3,12 @@ package com.tavrida.ElectroCounters.detection
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
+import android.util.Log
 import androidx.camera.core.ImageProxy
 import com.tavrida.utils.*
 import com.tavrida.utils.camera.YuvToRgbConverter
 import org.opencv.android.Utils
+import org.opencv.core.Core
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import org.opencv.core.Point
@@ -14,6 +16,7 @@ import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.File
 import java.io.FileOutputStream
+import java.security.InvalidParameterException
 
 class TwoStageDigitsDetector(
     val screenDetector: DarknetDetector,
@@ -23,37 +26,53 @@ class TwoStageDigitsDetector(
 ) {
     val storage = storageDirectory?.let { CounterDetectionStorage(storageDirectory) }
 
-    private var imageRotationDegrees: Int = 0
+    init {
+        Log.d("TTTTT-TTT", "${this::class.qualifiedName}.init")
+    }
+
     private lateinit var bitmapBuffer: Bitmap
     private val rgbaMatBuffer = Mat()
     private val rgbMatBuffer = Mat()
+    private val rgbRotatedMatBuffer = Mat()
 
     private val converter = YuvToRgbConverter(context)
-    // var count = 0
+
 
     @SuppressLint("UnsafeExperimentalUsageError")
     fun detect(yuvImage: ImageProxy): Collection<ObjectDetectionResult> {
         if (!::bitmapBuffer.isInitialized) {
-            // The image rotation and RGB image buffer are initialized only once
-            // the analyzer has started running
-            imageRotationDegrees = yuvImage.imageInfo.rotationDegrees
             bitmapBuffer = Bitmap.createBitmap(
                 yuvImage.width, yuvImage.height, Bitmap.Config.ARGB_8888
             )
         }
-        // TODO("ROTATE image!!!!")
+
+        Log.d("TTT-TTT-TTT", "${yuvImage.imageInfo.rotationDegrees}   ${yuvImage.width}:${yuvImage.height}")
+
+        val sensorRotationDegrees = yuvImage.imageInfo.rotationDegrees
 
         yuvImage.use { converter.yuvToRgb(yuvImage.image!!, bitmapBuffer) }
         Utils.bitmapToMat(bitmapBuffer, rgbaMatBuffer)
         (rgbaMatBuffer.type() == CvType.CV_8UC4).assert()
         Imgproc.cvtColor(rgbaMatBuffer, rgbMatBuffer, Imgproc.COLOR_RGBA2RGB)
 
-        // saveFrame(context, count, bitmapBuffer, rgbMatBuffer)
+        val detectorInput = rgbMatBuffer.compensateSensorRotation(rgbRotatedMatBuffer, sensorRotationDegrees)
+
+        // saveFrame(context, count, sensorRotationDegrees, bitmapBuffer, rgbMatBuffer, detectorInput)
         // count++
 
-        return screenDetector.detect(rgbMatBuffer).detections
+        return screenDetector.detect(detectorInput).detections
     }
 
+    fun Mat.compensateSensorRotation(dst: Mat, sensorRotationDegrees: Int): Mat {
+        val rotateCode = when (sensorRotationDegrees) {
+            0 -> return this
+            90 -> Core.ROTATE_90_CLOCKWISE
+            180 -> Core.ROTATE_180
+            else -> throw InvalidParameterException("Unexpected value $sensorRotationDegrees for sensorRotationDegrees")
+        }
+        Core.rotate(this, dst, rotateCode)
+        return dst
+    }
 
     fun process(image: ImageProxy) {
         val (rgbMat, bgrMat) = image.jpeg2RgbBgrMats()
@@ -143,17 +162,32 @@ class TwoStageDigitsDetector(
     )
 
     companion object {
-        fun saveFrame(context: Context, count: Int, bitmapBuffer: Bitmap, rgbMatBuffer: Mat) {
-            // val framesDir = File(context.filesDir, "frames")
-            val framesDir = Asset.fileInDownloads("frames")
+        var count = 0
+
+        fun saveFrame(
+            context: Context,
+            count: Int,
+            sensorRotation: Int,
+            bitmapBuffer: Bitmap,
+            rgbMatBuffer: Mat,
+            rgbRotatedMatBuffer: Mat
+        ) {
+            val framesDir = File(context.filesDir, "frames")
+            // val framesDir = Asset.fileInDownloads("frames")
             framesDir.mkdirs()
 
-            FileOutputStream(File(framesDir, "${count}_bitmap.png")).use {
+            val paddedCount = count.toString().padStart(4, '0')
+
+            FileOutputStream(File(framesDir, "${paddedCount}_${sensorRotation}_bitmap.png")).use {
                 bitmapBuffer.compress(Bitmap.CompressFormat.PNG, 100, it)
             }
             Imgcodecs.imwrite(
-                File(framesDir, "${count}_opencv.png").absolutePath,
+                File(framesDir, "${paddedCount}_${sensorRotation}_opencv.png").absolutePath,
                 rgbMatBuffer.rgb2bgr()
+            )
+            Imgcodecs.imwrite(
+                File(framesDir, "${paddedCount}_${sensorRotation}_opencv_rotated.png").absolutePath,
+                rgbRotatedMatBuffer.rgb2bgr()
             )
         }
 

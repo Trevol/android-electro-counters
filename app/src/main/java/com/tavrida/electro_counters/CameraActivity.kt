@@ -3,6 +3,7 @@ package com.tavrida.electro_counters
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
@@ -34,6 +35,10 @@ class CameraActivity : AppCompatActivity() {
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
 
+    init {
+        Log.d("TTTTT-TTT", "${this::class.qualifiedName}.init")
+    }
+
     private val detectorProvider by lazy {
         TwoStageDigitsDetectorProvider(this)
     }
@@ -42,6 +47,13 @@ class CameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
         detectorProvider.ensureDetector()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        Log.d("TTT", "LANDSCAPE=${newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE}  " +
+                "PORTRAIT=${newConfig.orientation==Configuration.ORIENTATION_PORTRAIT}")
+
     }
 
     private fun bindCameraUseCases() = view_finder.post {
@@ -83,6 +95,7 @@ class CameraActivity : AppCompatActivity() {
 
 
     fun analyzeImage(image: ImageProxy) {
+        // Log.d("TTT", "${view_finder.display.rotation}")
         val t0 = System.currentTimeMillis()
 
         val predictions = detectorProvider.detector.detect(image)

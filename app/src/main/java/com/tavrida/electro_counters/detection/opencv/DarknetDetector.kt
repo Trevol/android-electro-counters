@@ -1,5 +1,6 @@
 package com.tavrida.ElectroCounters.detection
 
+import android.util.Log
 import com.tavrida.utils.latterbox
 import org.opencv.core.*
 import org.opencv.dnn.Dnn
@@ -13,7 +14,12 @@ class DarknetDetector {
     var outputLayers: List<String>
     var inputSize: Size
 
-    constructor(net: Net, inputSize: Int = 416, confThreshold: Float = 0.3f, nmsThreshold: Float = 0.4f) {
+    constructor(
+        net: Net,
+        inputSize: Int = 416,
+        confThreshold: Float = 0.3f,
+        nmsThreshold: Float = 0.4f
+    ) {
         this.net = net
         this.outputLayers = net.outputLayers()
         this.inputSize = Size(inputSize, inputSize)
@@ -21,13 +27,27 @@ class DarknetDetector {
         this.nmsThreshold = nmsThreshold
     }
 
-    constructor(cfgFile: String, darknetModel: String, inputSize: Int = 416, confThreshold: Float = 0.3f,
-                nmsThreshold: Float = 0.4f) : this(makeNet(cfgFile, darknetModel), inputSize, confThreshold, nmsThreshold)
+    constructor(
+        cfgFile: String, darknetModel: String, inputSize: Int = 416, confThreshold: Float = 0.3f,
+        nmsThreshold: Float = 0.4f
+    ) : this(makeNet(cfgFile, darknetModel), inputSize, confThreshold, nmsThreshold)
 
-    constructor(cfgFile: ByteArray, darknetModel: ByteArray, inputSize: Int = 416, confThreshold: Float = 0.3f,
-                nmsThreshold: Float = 0.4f) : this(makeNet(cfgFile, darknetModel), inputSize, confThreshold, nmsThreshold)
+    constructor(
+        cfgFile: ByteArray,
+        darknetModel: ByteArray,
+        inputSize: Int = 416,
+        confThreshold: Float = 0.3f,
+        nmsThreshold: Float = 0.4f
+    ) : this(makeNet(cfgFile, darknetModel), inputSize, confThreshold, nmsThreshold)
 
-    data class DetectionResult(val detections: Collection<ObjectDetectionResult>, val durationInMs: Long)
+    init {
+        Log.d("TTTTT-TTT", "${this::class.qualifiedName}.init")
+    }
+
+    data class DetectionResult(
+        val detections: Collection<ObjectDetectionResult>,
+        val durationInMs: Long
+    )
 
     fun detect(rgbImg: Mat): DetectionResult {
         val t0 = System.currentTimeMillis()
@@ -51,10 +71,10 @@ class DarknetDetector {
     }
 
     fun postprocess(
-            frame: Mat,
-            outs: List<Mat>,
-            confThreshold: Float,
-            nmsThreshold: Float
+        frame: Mat,
+        outs: List<Mat>,
+        confThreshold: Float,
+        nmsThreshold: Float
     ): Collection<ObjectDetectionResult> {
 
         val classIds = ArrayList<Int>()
@@ -99,7 +119,8 @@ class DarknetDetector {
         val matOfIndexes = MatOfInt()
         Dnn.NMSBoxes(matOfRect, matOfScores, confThreshold, nmsThreshold, matOfIndexes)
 
-        return matOfIndexes.toArray().map { i -> ObjectDetectionResult(classIds[i], classScores[i], boxes[i]) }
+        return matOfIndexes.toArray()
+            .map { i -> ObjectDetectionResult(classIds[i], classScores[i], boxes[i]) }
     }
 
     companion object {
