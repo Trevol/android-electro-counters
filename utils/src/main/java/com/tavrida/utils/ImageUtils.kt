@@ -1,18 +1,21 @@
 package com.tavrida.utils
 
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import androidx.camera.core.ImageProxy
 import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.nio.ByteBuffer
+import java.security.InvalidParameterException
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.round
 
 fun ImageProxy.jpeg2RgbBgrMats() =
-        planes[0].buffer.toArray()
-                .let { Imgcodecs.imdecode(MatOfByte(*it), Imgcodecs.IMREAD_COLOR) }
-                .let { bgr -> Pair(bgr.bgr2rgb(), bgr) }
+    planes[0].buffer.toArray()
+        .let { Imgcodecs.imdecode(MatOfByte(*it), Imgcodecs.IMREAD_COLOR) }
+        .let { bgr -> Pair(bgr.bgr2rgb(), bgr) }
 
 fun Mat.copy() = Mat().also { this.copyTo(it) }
 fun Mat.bgr2rgbInplace() = this.also { Imgproc.cvtColor(this, it, Imgproc.COLOR_BGR2RGB) }
@@ -29,10 +32,10 @@ fun Mat.roi(roi: Rect, hPadding: Int = 0, vPadding: Int = 0): Mat {
     val paddedX = max(roi.x - hPadding, 0)
     val paddedY = max(roi.y - vPadding, 0)
     val roi = Rect(
-            paddedX,
-            paddedY,
-            min(roi.width + hPadding + hPadding, width - paddedX),
-            min(roi.height + vPadding + vPadding, height - paddedY)
+        paddedX,
+        paddedY,
+        min(roi.width + hPadding + hPadding, width - paddedX),
+        min(roi.height + vPadding + vPadding, height - paddedY)
     )
     return Mat(this, roi)
 }
@@ -40,10 +43,10 @@ fun Mat.roi(roi: Rect, hPadding: Int = 0, vPadding: Int = 0): Mat {
 fun Rect2d.toRect() = Rect(x.toInt(), y.toInt(), width.toInt(), height.toInt())
 
 private fun ByteBuffer.toArray() = ByteArray(this.capacity())
-        .also {
-            this.rewind()
-            this.get(it)
-        }
+    .also {
+        this.rewind()
+        this.get(it)
+    }
 
 fun Range(s: Double, e: Double) = Range(s.toInt(), e.toInt())
 fun Size(width: Int, height: Int) = Size(width.toDouble(), height.toDouble())
@@ -89,7 +92,18 @@ fun latterbox(
     val bottom = round(dh + .1).toInt()
     val left = round(dw - 0.1).toInt()
     val right = round(dw + 0.1).toInt()
-    img = Mat().also { Core.copyMakeBorder(img, it, top, bottom, left, right, Core.BORDER_CONSTANT, color) }
+    img = Mat().also {
+        Core.copyMakeBorder(
+            img,
+            it,
+            top,
+            bottom,
+            left,
+            right,
+            Core.BORDER_CONSTANT,
+            color
+        )
+    }
 
     return Triple(img, whRatio, Size(dw, dh))
 }
@@ -103,9 +117,9 @@ fun hstack(vararg mats: Mat, fillColor: Scalar = Scalar.all(0.0)): Mat {
     var x = 0
     for (m in mats) {
         val roi = Mat(
-                stacked,
-                Range(0, m.height()),
-                Range(x, x + m.width())
+            stacked,
+            Range(0, m.height()),
+            Range(x, x + m.width())
         )
         m.copyTo(roi)
         x += m.width()
@@ -122,9 +136,9 @@ fun vstack(vararg mats: Mat, fillColor: Scalar = Scalar.all(0.0)): Mat {
     var y = 0
     for (m in mats) {
         val roi = Mat(
-                stacked,
-                Range(y, y + m.height()),
-                Range(0, m.width())
+            stacked,
+            Range(y, y + m.height()),
+            Range(0, m.width())
         )
         m.copyTo(roi)
         y += m.height()
@@ -132,7 +146,11 @@ fun vstack(vararg mats: Mat, fillColor: Scalar = Scalar.all(0.0)): Mat {
     return stacked
 }
 
-fun Mat.resize(width: Int? = null, height: Int? = null, interpolation: Int = Imgproc.INTER_LINEAR): Mat {
+fun Mat.resize(
+    width: Int? = null,
+    height: Int? = null,
+    interpolation: Int = Imgproc.INTER_LINEAR
+): Mat {
     if (width == null && height == null)
         throw AssertionError("width == null && height == null")
     if (width != null && height != null)
@@ -148,3 +166,24 @@ fun Mat.resize(width: Int? = null, height: Int? = null, interpolation: Int = Img
         Imgproc.resize(this, it, Size(), k, k, interpolation)
     }
 }
+
+fun Mat.compensateSensorRotation(dst: Mat, sensorRotationDegrees: Int): Mat {
+    val rotateCode = when (sensorRotationDegrees) {
+        0 -> return this
+        90 -> Core.ROTATE_90_CLOCKWISE
+        180 -> Core.ROTATE_180
+        else -> throw InvalidParameterException("Unexpected value $sensorRotationDegrees for sensorRotationDegrees")
+    }
+    Core.rotate(this, dst, rotateCode)
+    return dst
+}
+
+fun Bitmap.compensateSensorRotation(sensorRotationDegrees: Int) =
+    if (sensorRotationDegrees == 0) {
+        this
+    } else
+        Bitmap.createBitmap(
+            this, 0, 0, this.width, this.height,
+            Matrix().apply { postRotate(sensorRotationDegrees.toFloat()) },
+            false
+        )

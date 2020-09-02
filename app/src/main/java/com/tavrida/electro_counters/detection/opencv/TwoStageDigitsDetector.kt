@@ -51,19 +51,6 @@ class TwoStageDigitsDetector(
             )
             return detectorInput
         }
-
-        companion object {
-            fun Mat.compensateSensorRotation(dst: Mat, sensorRotationDegrees: Int): Mat {
-                val rotateCode = when (sensorRotationDegrees) {
-                    0 -> return this
-                    90 -> Core.ROTATE_90_CLOCKWISE
-                    180 -> Core.ROTATE_180
-                    else -> throw InvalidParameterException("Unexpected value $sensorRotationDegrees for sensorRotationDegrees")
-                }
-                Core.rotate(this, dst, rotateCode)
-                return dst
-            }
-        }
     }
 
 
