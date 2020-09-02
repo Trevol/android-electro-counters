@@ -1,8 +1,10 @@
 package com.tavrida.electro_counters
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
@@ -12,10 +14,13 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContentProviderCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.ElectroCounters.detection.ObjectDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
+import com.tavrida.utils.camera.YuvToRgbConverter
+import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.toDisplayStr
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.util.concurrent.Executors
@@ -41,22 +46,22 @@ class CameraActivity : AppCompatActivity() {
         detectorProvider.ensureDetector()
     }
 
-    private fun bindCameraUseCases() = view_finder.post {
+    private fun bindCameraUseCases() = view_preview.post {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener(Runnable {
             // Camera provider is now guaranteed to be available
             val cameraProvider = cameraProviderFuture.get()
 
             // Set up the view finder use case to display camera preview
-            val preview = Preview.Builder()
+            /*val preview = Preview.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
                 .setTargetRotation(view_finder.display.rotation)
-                .build()
+                .build()*/
 
             // Set up the image analysis use case which will process frames in real time
             val imageAnalysis = ImageAnalysis.Builder()
                 .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(view_finder.display.rotation)
+                .setTargetRotation(view_preview.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
@@ -68,17 +73,35 @@ class CameraActivity : AppCompatActivity() {
 
             cameraProvider.unbindAll()
             val camera = cameraProvider.bindToLifecycle(
-                this as LifecycleOwner, cameraSelector, preview, imageAnalysis
+                this as LifecycleOwner, cameraSelector, imageAnalysis
             )
 
-            preview.setSurfaceProvider(view_finder.createSurfaceProvider())
+            // preview.setSurfaceProvider(view_finder.createSurfaceProvider())
 
-            view_finder.afterMeasured { setupAutoFocus(view_finder, camera!!) }
+            view_preview.afterMeasured { setupAutoFocus(view_preview, camera!!) }
 
         }, ContextCompat.getMainExecutor(this))
     }
 
-    fun analyzeImage(image: ImageProxy) = image.use {
+    private val converter by lazy { YuvToRgbConverter(this) }
+    private lateinit var bitmapBuffer: Bitmap
+
+    @SuppressLint("UnsafeExperimentalUsageError")
+    fun analyzeImage(image: ImageProxy) {
+        val rotation = image.imageInfo.rotationDegrees
+        image.use {
+            if (!::bitmapBuffer.isInitialized) {
+                bitmapBuffer = Bitmap.createBitmap(
+                    image.width, image.height, Bitmap.Config.ARGB_8888
+                )
+            }
+            converter.yuvToRgb(image.image!!, bitmapBuffer)
+        }
+        var b = bitmapBuffer.compensateSensorRotation(rotation)
+        view_preview.post { view_preview.setImageBitmap(b) }
+    }
+
+    fun analyzeImage__(image: ImageProxy) = image.use {
         val t0 = System.currentTimeMillis()
 
         val predictions = detectorProvider.detector.detect(image, imageId)
@@ -89,7 +112,7 @@ class CameraActivity : AppCompatActivity() {
         Log.d(TAG, "Process frame in $timingTxt")
         text_timings.post { text_timings.text = "$imageId $timingTxt" }
 
-        view_predictions.showDetectionResult(predictions)
+        // view_predictions.showDetectionResult(predictions)
         imageId++
     }
 

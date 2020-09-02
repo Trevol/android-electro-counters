@@ -7,24 +7,22 @@
     android:layout_height="match_parent"
     android:background="@android:color/black">
 
-    <androidx.camera.view.PreviewView
+    <!--<androidx.camera.view.PreviewView
         android:id="@+id/view_finder"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent" />-->
 
-    <com.tavrida.electro_counters.ObjectPredictionsView
+    <!--<com.tavrida.electro_counters.ObjectPredictionsView
         android:id="@+id/view_predictions"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#00000000" />
+        android:background="#00000000" />-->
 
-<!--
     <ImageView
+        android:id="@+id/view_preview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:src="@drawable/test_frame"
         android:scaleType="centerCrop"/>
--->
 
     <TextView
         android:id="@+id/text_timings"

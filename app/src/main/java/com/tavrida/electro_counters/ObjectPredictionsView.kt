@@ -48,15 +48,12 @@ class ObjectPredictionsView : View {
     }
 
     private fun mapOutputCoordinates(location: RectF): RectF {
-
         val previewLocation = RectF(
             location.left * width,
             location.top * height,
             location.right * width,
             location.bottom * height
         )
-
-
         // Step 2: compensate for 1:1 to 4:3 aspect ratio conversion + small margin
         val margin = 0.1f
         val requestedRatio = 4f / 3f
