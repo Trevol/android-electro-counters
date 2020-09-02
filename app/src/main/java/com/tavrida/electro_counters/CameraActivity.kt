@@ -3,7 +3,6 @@ package com.tavrida.electro_counters
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
@@ -17,11 +16,8 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.ElectroCounters.detection.ObjectDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
-import com.tavrida.electro_counters.detection.tflite.ObjectDetectionManager
-import com.tavrida.electro_counters.detection.tflite.ObjectPrediction
 import com.tavrida.utils.toDisplayStr
 import kotlinx.android.synthetic.main.activity_camera.*
-import org.opencv.core.Mat
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -35,10 +31,6 @@ class CameraActivity : AppCompatActivity() {
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
 
-    init {
-        Log.d("TTTTT-TTT", "${this::class.qualifiedName}.init")
-    }
-
     private val detectorProvider by lazy {
         TwoStageDigitsDetectorProvider(this)
     }
@@ -47,13 +39,6 @@ class CameraActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
         detectorProvider.ensureDetector()
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        Log.d("TTT", "LANDSCAPE=${newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE}  " +
-                "PORTRAIT=${newConfig.orientation==Configuration.ORIENTATION_PORTRAIT}")
-
     }
 
     private fun bindCameraUseCases() = view_finder.post {
@@ -93,81 +78,19 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-
-    fun analyzeImage(image: ImageProxy) {
-        // Log.d("TTT", "${view_finder.display.rotation}")
+    fun analyzeImage(image: ImageProxy) = image.use {
         val t0 = System.currentTimeMillis()
 
-        val predictions = detectorProvider.detector.detect(image)
+        val predictions = detectorProvider.detector.detect(image, imageId)
 
         val t1 = System.currentTimeMillis()
 
         val timingTxt = "${t1 - t0}ms"
         Log.d(TAG, "Process frame in $timingTxt")
-        text_timings.post { text_timings.text = timingTxt }
+        text_timings.post { text_timings.text = "$imageId $timingTxt" }
 
-        showDetectionResult(predictions)
-    }
-
-    private fun showDetectionResult(predictions: Collection<ObjectDetectionResult>) {
-        if (predictions.isNotEmpty()) {
-            Log.d("PRED-PRED", "=============================")
-            for (p in predictions) {
-                Log.d("PRED-PRED", "${p.classId} ${p.classScore} ${p.box.toDisplayStr()}")
-            }
-        }
-        val locations = predictions.map {
-            val b = it.box
-            RectF(
-                b.x.toFloat(),
-                b.y.toFloat(),
-                (b.x + b.width).toFloat(),
-                (b.y + b.height).toFloat()
-            )
-        }
-        view_predictions.showLocations(locations)
-
-    }
-
-    private fun showPredictions(predictions: List<ObjectPrediction>) {
-        if (predictions.isEmpty()) {
-            return
-        }
-        view_predictions.post {
-            val locations = predictions.map { mapOutputCoordinates(it.location) }
-            view_predictions.showLocations(locations)
-        }
-    }
-
-    private fun mapOutputCoordinates(location: RectF): RectF {
-
-        val previewLocation = RectF(
-            location.left * view_finder.width,
-            location.top * view_finder.height,
-            location.right * view_finder.width,
-            location.bottom * view_finder.height
-        )
-
-        // Step 2: compensate for 1:1 to 4:3 aspect ratio conversion + small margin
-        val margin = 0.1f
-        val requestedRatio = 4f / 3f
-        val midX = (previewLocation.left + previewLocation.right) / 2f
-        val midY = (previewLocation.top + previewLocation.bottom) / 2f
-        return if (view_finder.width < view_finder.height) {
-            RectF(
-                midX - (1f + margin) * requestedRatio * previewLocation.width() / 2f,
-                midY - (1f - margin) * previewLocation.height() / 2f,
-                midX + (1f + margin) * requestedRatio * previewLocation.width() / 2f,
-                midY + (1f - margin) * previewLocation.height() / 2f
-            )
-        } else {
-            RectF(
-                midX - (1f - margin) * previewLocation.width() / 2f,
-                midY - (1f + margin) * requestedRatio * previewLocation.height() / 2f,
-                midX + (1f - margin) * previewLocation.width() / 2f,
-                midY + (1f + margin) * requestedRatio * previewLocation.height() / 2f
-            )
-        }
+        view_predictions.showDetectionResult(predictions)
+        imageId++
     }
 
     override fun onResume() {
@@ -201,6 +124,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     companion object {
+        private var imageId = 0
         private val TAG = CameraActivity::class.java.simpleName
 
         inline fun View.afterMeasured(crossinline block: () -> Unit) {

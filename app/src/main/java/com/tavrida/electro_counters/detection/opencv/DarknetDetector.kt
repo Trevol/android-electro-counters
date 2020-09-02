@@ -6,6 +6,7 @@ import org.opencv.core.*
 import org.opencv.dnn.Dnn
 import org.opencv.dnn.Net
 import java.util.*
+import kotlin.collections.ArrayList
 
 class DarknetDetector {
     var confThreshold: Float = 0.3f
@@ -39,10 +40,6 @@ class DarknetDetector {
         confThreshold: Float = 0.3f,
         nmsThreshold: Float = 0.4f
     ) : this(makeNet(cfgFile, darknetModel), inputSize, confThreshold, nmsThreshold)
-
-    init {
-        Log.d("TTTTT-TTT", "${this::class.qualifiedName}.init")
-    }
 
     data class DetectionResult(
         val detections: Collection<ObjectDetectionResult>,
@@ -80,6 +77,7 @@ class DarknetDetector {
         val classIds = ArrayList<Int>()
         val classScores = ArrayList<Float>()
         val boxes = ArrayList<Rect2d>()
+        val normalizedBoxes = ArrayList<Rect2d>()
         for (detections in outs) {
             for (objectIdx in 0 until detections.rows()) {
                 val objectConfidence = detections[objectIdx, 4][0]
@@ -108,6 +106,10 @@ class DarknetDetector {
                 classIds.add(classId)
                 classScores.add(classScore.toFloat())
                 boxes.add(Rect2d(left, top, width, height))
+                normalizedBoxes.add(
+                    Rect2d(left / frameW, top / frameH, width / frameW, height / frameH)
+                )
+
             }
         }
 
@@ -120,7 +122,14 @@ class DarknetDetector {
         Dnn.NMSBoxes(matOfRect, matOfScores, confThreshold, nmsThreshold, matOfIndexes)
 
         return matOfIndexes.toArray()
-            .map { i -> ObjectDetectionResult(classIds[i], classScores[i], boxes[i]) }
+            .map { i ->
+                ObjectDetectionResult(
+                    classIds[i],
+                    classScores[i],
+                    boxes[i],
+                    normalizedBoxes[i]
+                )
+            }
     }
 
     companion object {
