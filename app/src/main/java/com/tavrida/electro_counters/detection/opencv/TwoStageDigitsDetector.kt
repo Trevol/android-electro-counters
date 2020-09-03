@@ -7,15 +7,10 @@ import androidx.camera.core.ImageProxy
 import com.tavrida.utils.*
 import com.tavrida.utils.camera.YuvToRgbConverter
 import org.opencv.android.Utils
-import org.opencv.core.Core
-import org.opencv.core.CvType
 import org.opencv.core.Mat
-import org.opencv.core.Point
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
 import java.io.File
-import java.io.FileOutputStream
-import java.security.InvalidParameterException
 
 class TwoStageDigitsDetector(
     val screenDetector: DarknetDetector,
@@ -26,33 +21,11 @@ class TwoStageDigitsDetector(
     val storage = storageDirectory?.let { CounterDetectionStorage(storageDirectory) }
     private val imageConverter = ImageConverter(context)
 
-    private class ImageConverter(context: Context) {
-        private lateinit var bitmapBuffer: Bitmap
-        private val rgbaMatBuffer = Mat()
-        private val rgbMatBuffer = Mat()
-        private val rgbRotatedMatBuffer = Mat()
 
-        private val converter = YuvToRgbConverter(context)
-
-        @SuppressLint("UnsafeExperimentalUsageError")
-        fun convert(yuvImage: ImageProxy): Mat {
-            if (!::bitmapBuffer.isInitialized) {
-                bitmapBuffer = Bitmap.createBitmap(
-                    yuvImage.width, yuvImage.height, Bitmap.Config.ARGB_8888
-                )
-            }
-            converter.yuvToRgb(yuvImage.image!!, bitmapBuffer)
-            Utils.bitmapToMat(bitmapBuffer, rgbaMatBuffer)
-            Imgproc.cvtColor(rgbaMatBuffer, rgbMatBuffer, Imgproc.COLOR_RGBA2RGB)
-
-            val detectorInput = rgbMatBuffer.compensateSensorRotation(
-                rgbRotatedMatBuffer,
-                yuvImage.imageInfo.rotationDegrees
-            )
-            return detectorInput
-        }
+    fun detect(image: Bitmap, imageId: Int): Collection<ObjectDetectionResult> {
+        val detectorInput = imageConverter.convert(image)
+        return screenDetector.detect(detectorInput).detections
     }
-
 
     fun detect(yuvImage: ImageProxy, imageId: Int): Collection<ObjectDetectionResult> {
 
@@ -60,7 +33,7 @@ class TwoStageDigitsDetector(
 
         val detections = screenDetector.detect(detectorInput).detections
 
-        val viz = detectorInput.copy()
+        /*val viz = detectorInput.copy()
         detections.forEach {
             Imgproc.rectangle(
                 viz,
@@ -69,7 +42,7 @@ class TwoStageDigitsDetector(
                 2
             )
         }
-        // save(context, imageId, yuvImage.imageInfo.rotationDegrees, viz)
+        save(context, imageId, yuvImage.imageInfo.rotationDegrees, viz)*/
 
         return detections
     }
@@ -97,6 +70,40 @@ class TwoStageDigitsDetector(
         private val bgrGreen = Scalar(0, 255, 0)
         private val bgrClassColors = arrayOf(bgrRed, bgrGreen)
     }
+
+    private class ImageConverter(context: Context) {
+        private lateinit var bitmapBuffer: Bitmap
+        private val rgbaMatBuffer = Mat()
+        private val rgbMatBuffer = Mat()
+        private val rgbRotatedMatBuffer = Mat()
+
+        private val converter = YuvToRgbConverter(context)
+
+        @SuppressLint("UnsafeExperimentalUsageError")
+        fun convert(yuvImage: ImageProxy): Mat {
+            if (!::bitmapBuffer.isInitialized) {
+                bitmapBuffer = Bitmap.createBitmap(
+                    yuvImage.width, yuvImage.height, Bitmap.Config.ARGB_8888
+                )
+            }
+            converter.yuvToRgb(yuvImage.image!!, bitmapBuffer)
+            Utils.bitmapToMat(bitmapBuffer, rgbaMatBuffer)
+            Imgproc.cvtColor(rgbaMatBuffer, rgbMatBuffer, Imgproc.COLOR_RGBA2RGB)
+
+            val detectorInput = rgbMatBuffer.compensateSensorRotation(
+                rgbRotatedMatBuffer,
+                yuvImage.imageInfo.rotationDegrees
+            )
+            return detectorInput
+        }
+
+        fun convert(image: Bitmap): Mat {
+            Utils.bitmapToMat(image, rgbaMatBuffer)
+            Imgproc.cvtColor(rgbaMatBuffer, rgbMatBuffer, Imgproc.COLOR_RGBA2RGB)
+            return rgbMatBuffer
+        }
+    }
+
 
     /*fun process(image: ImageProxy) {
         val (rgbMat, bgrMat) = image.jpeg2RgbBgrMats()

@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
@@ -14,15 +15,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContentProviderCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.ElectroCounters.detection.ObjectDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
-import com.tavrida.utils.toDisplayStr
 import kotlinx.android.synthetic.main.activity_camera.*
+import org.opencv.core.Rect2d
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -89,17 +89,52 @@ class CameraActivity : AppCompatActivity() {
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
         val rotation = image.imageInfo.rotationDegrees
+        if (!::bitmapBuffer.isInitialized) {
+            bitmapBuffer = Bitmap.createBitmap(
+                image.width, image.height, Bitmap.Config.ARGB_8888
+            )
+        }
         image.use {
-            if (!::bitmapBuffer.isInitialized) {
-                bitmapBuffer = Bitmap.createBitmap(
-                    image.width, image.height, Bitmap.Config.ARGB_8888
-                )
-            }
             converter.yuvToRgb(image.image!!, bitmapBuffer)
         }
-        var b = bitmapBuffer.compensateSensorRotation(rotation)
-        view_preview.post { view_preview.setImageBitmap(b) }
+        val inputBitmap = bitmapBuffer.compensateSensorRotation(rotation)
+        val detections = detectorProvider.detector.detect(inputBitmap, imageId)
+
+        draw(inputBitmap, detections)
+
+        view_preview.post { view_preview.setImageBitmap(inputBitmap) }
+        imageId++
+
     }
+
+    private fun draw(bmp: Bitmap, detections: Collection<ObjectDetectionResult>): Bitmap {
+        if (detections.isEmpty()) {
+            return bmp
+        }
+        val locations = detections.map {
+            it.normalizedBox.toRectF().toViewCoordinates(bmp.width, bmp.height)
+        }
+        val canvas = Canvas(bmp)
+        for (loc in locations){
+            canvas.drawRect(loc, ObjectPredictionsView.paint)
+        }
+        return bmp
+    }
+
+    private fun Rect2d.toRectF() = RectF(
+        this.x.toFloat(),
+        this.y.toFloat(),
+        (this.x + this.width).toFloat(),
+        (this.y + this.height).toFloat()
+    )
+
+    private fun RectF.toViewCoordinates(viewWidth: Int, viewHeight: Int) = RectF(
+        this.left * viewWidth,
+        this.top * viewHeight,
+        this.right * viewWidth,
+        this.bottom * viewHeight
+    )
+
 
     fun analyzeImage__(image: ImageProxy) = image.use {
         val t0 = System.currentTimeMillis()

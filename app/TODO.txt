@@ -1,0 +1,6 @@
+- compare timings for
+    - bitmap rotation (using Matrix)
+    - opencv rotate(rotationCode)
+- implement 90/180/270 degree rotation using vertical/horizontal flip
+    https://acomputerengineer.com/2016/06/07/flip-imagebitmap-horizontally-and-vertically-in-android/
+    https://stackoverflow.com/questions/36493977/flip-a-bitmap-image-horizontally-or-vertically
