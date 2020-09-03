@@ -19,34 +19,38 @@ class TwoStageDigitsDetector(
     storageDirectory: File?
 ) {
     val storage = storageDirectory?.let { CounterDetectionStorage(storageDirectory) }
+
+
     private val imageConverter = ImageConverter(context)
 
-
-    fun detect(image: Bitmap, imageId: Int): Collection<ObjectDetectionResult> {
+    fun detect(image: Bitmap, imageId: Int): TwoStageDetectionResult? {
         val detectorInput = imageConverter.convert(image)
-        return screenDetector.detect(detectorInput).detections
+
+        val screenDetection = screenDetector.detect(detectorInput).detections
+            .filter { it.classId == screenClassId }
+            // if multiple screen detected - choose closest to image center
+            .minBy { it.box.center().L2squared(image.center()) }
+            ?: return null
+
+        val (screenImg, screenRoi) = detectorInput.roi(screenDetection.box.toRect(), .2, .2)
+        val digitsDetections = digitsDetector.detect(screenImg).detections
+        // return screenLocation: RectF, screenImage: Bitmap, digitsDetections (inside screen image)
+        return TwoStageDetectionResult(
+            screenRoi.toRectF(),
+            screenImg.toBitmap(),
+            digitsDetections
+        )
     }
 
     fun detect(yuvImage: ImageProxy, imageId: Int): Collection<ObjectDetectionResult> {
-
         val detectorInput = imageConverter.convert(yuvImage)
+        /*val screenDetection = screenDetector.detect(detectorInput).detections
+            .filter { it.classId == screenClassId }
+            .minBy { it.box.center().L2squared() }*/
 
-        val detections = screenDetector.detect(detectorInput).detections
-
-        /*val viz = detectorInput.copy()
-        detections.forEach {
-            Imgproc.rectangle(
-                viz,
-                it.box.toRect(),
-                bgrClassColors[it.classId],
-                2
-            )
-        }
-        save(context, imageId, yuvImage.imageInfo.rotationDegrees, viz)*/
-
-        return detections
+        // return screenLocation: RectF, screenImage: Bitmap, digitsDetections (inside screen image)
+        return listOf()
     }
-
 
     companion object {
         fun save(

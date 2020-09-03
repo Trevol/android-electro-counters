@@ -3,6 +3,7 @@ package com.tavrida.utils
 import android.graphics.Bitmap
 import android.graphics.Matrix
 import androidx.camera.core.ImageProxy
+import org.opencv.android.Utils
 import org.opencv.core.*
 import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
@@ -26,7 +27,7 @@ fun Mat.rgba2bgra() = Mat().also { rgba -> Imgproc.cvtColor(this, rgba, Imgproc.
 
 fun Mat.roi(roi: Rect, padding: Int = 0) = this.roi(roi, padding, padding)
 
-fun Mat.roi(roi: Rect, hPadding: Int = 0, vPadding: Int = 0): Mat {
+fun Mat.roi(roi: Rect, hPadding: Int = 0, vPadding: Int = 0): Pair<Mat, Rect> {
     val height = this.rows()
     val width = this.cols()
     val paddedX = max(roi.x - hPadding, 0)
@@ -37,10 +38,12 @@ fun Mat.roi(roi: Rect, hPadding: Int = 0, vPadding: Int = 0): Mat {
         min(roi.width + hPadding + hPadding, width - paddedX),
         min(roi.height + vPadding + vPadding, height - paddedY)
     )
-    return Mat(this, roi)
+    return Mat(this, roi) to roi
 }
 
-fun Rect2d.toRect() = Rect(x.toInt(), y.toInt(), width.toInt(), height.toInt())
+fun Mat.roi(roi: Rect, hPadding: Double = 0.0, vPadding: Double = 0.0): Pair<Mat, Rect> {
+    TODO()
+}
 
 private fun ByteBuffer.toArray() = ByteArray(this.capacity())
     .also {
@@ -52,7 +55,7 @@ fun Range(s: Double, e: Double) = Range(s.toInt(), e.toInt())
 fun Size(width: Int, height: Int) = Size(width.toDouble(), height.toDouble())
 fun Scalar(v0: Int, v1: Int, v2: Int) = Scalar(v0.toDouble(), v1.toDouble(), v2.toDouble())
 fun Scalar(v0: Int) = Scalar(v0.toDouble())
-fun Rect2d.toDisplayStr() = "xywh( $x, $y, $width, $height )"
+
 
 fun latterbox(
     img: Mat,
@@ -187,3 +190,9 @@ fun Bitmap.compensateSensorRotation(sensorRotationDegrees: Int) =
             Matrix().apply { postRotate(sensorRotationDegrees.toFloat()) },
             false
         )
+
+fun Bitmap.center() = Point(width / 2.0, height / 2.0)
+
+fun Mat.toBitmap() = Bitmap.createBitmap(cols(), rows(), Bitmap.Config.ARGB_8888)
+    .apply { Utils.matToBitmap(this@toBitmap, this) }
+

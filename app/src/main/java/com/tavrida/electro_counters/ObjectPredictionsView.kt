@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.View
 import com.tavrida.ElectroCounters.detection.ObjectDetectionResult
 import com.tavrida.utils.toDisplayStr
+import com.tavrida.utils.toRectF
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.opencv.core.Rect2d
 import kotlin.random.Random
@@ -82,13 +83,6 @@ class ObjectPredictionsView : View {
             style = Paint.Style.STROKE
             strokeWidth = 2f
         }
-
-        private fun Rect2d.toRectF() = RectF(
-            this.x.toFloat(),
-            this.y.toFloat(),
-            (this.x + this.width).toFloat(),
-            (this.y + this.height).toFloat()
-        )
 
 
         private fun logDetectionResult(detections: Collection<ObjectDetectionResult>) {
