@@ -32,7 +32,7 @@ class TwoStageDigitsDetector(
             .minBy { it.box.center().L2squared(image.center()) }
             ?: return null
 
-        val (screenImg, screenRoi) = detectorInput.roi(screenDetection.box.toRect(), .2, .2)
+        val (screenImg, screenRoi) = detectorInput.roi(screenDetection.box.toRect(), .15, .15)
         val digitsDetections = digitsDetector.detect(screenImg).detections
         // return screenLocation: RectF, screenImage: Bitmap, digitsDetections (inside screen image)
         return TwoStageDetectionResult(

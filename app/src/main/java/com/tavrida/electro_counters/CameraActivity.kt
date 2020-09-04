@@ -9,7 +9,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +21,7 @@ import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
+import com.tavrida.utils.toRectF
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -102,16 +102,10 @@ class CameraActivity : AppCompatActivity() {
         val inputBitmap = bitmapBuffer.compensateSensorRotation(rotation)
         val result = detectorProvider.detector.detect(inputBitmap, imageId)
 
-        draw(inputBitmap, result)
-
         val t1 = System.currentTimeMillis()
 
-        view_preview.post {
-            val timingTxt = "${t1 - t0}ms"
-            Log.d(TAG, "Process frame in $timingTxt")
-            text_timings.text = "$imageId $timingTxt"
-            view_preview.setImageBitmap(inputBitmap)
-        }
+        showDetectionResults(inputBitmap, result, t1 - t0)
+
         imageId++
 
     }
@@ -122,13 +116,56 @@ class CameraActivity : AppCompatActivity() {
         strokeWidth = 2f
     }
 
-    private fun draw(bmp: Bitmap, detectionResult: TwoStageDetectionResult?): Bitmap {
+    val digitsPaint = Paint().apply {
+        color = Color.argb(255, 0, 255, 0)
+        style = Paint.Style.STROKE
+        strokeWidth = 1f
+    }
+
+    private fun showDetectionResults(
+        inputBitmap: Bitmap,
+        detectionResult: TwoStageDetectionResult?,
+        duration: Long
+    ) {
+        val timingTxt = "${duration}ms"
+        // Log.d(TAG, "Process frame in $timingTxt")
+
         if (detectionResult == null) {
-            return bmp
+            view_preview.post {
+                text_timings.text = timingTxt
+                view_preview.setImageBitmap(inputBitmap)
+                image_screen.visibility = View.GONE
+                image_digits.visibility = View.GONE
+            }
+            return
         }
-        val canvas = Canvas(bmp)
+        val canvas = Canvas(inputBitmap)
         canvas.drawRect(detectionResult.screenLocation, screenPaint)
-        return bmp
+
+        val digitsDetectionBitmap = Bitmap.createBitmap(
+            detectionResult.screenImage.width,
+            detectionResult.screenImage.height,
+            Bitmap.Config.ARGB_8888
+        ).apply { eraseColor(Color.argb(255, 0, 0, 0)) }
+
+        val screenImageCanvas = Canvas(detectionResult.screenImage)
+        val digitsImageCanvas = Canvas(digitsDetectionBitmap)
+        for (d in detectionResult.digitsDetections) {
+            screenImageCanvas.drawRect(d.box.toRectF(), screenPaint)
+            digitsImageCanvas.drawRect(d.box.toRectF(), screenPaint)
+            TODO("digitsImageCanvas.drawText()")
+        }
+
+
+        view_preview.post {
+            text_timings.text = timingTxt
+            view_preview.setImageBitmap(inputBitmap)
+
+            image_screen.setImageBitmap(detectionResult.screenImage)
+            image_digits.setImageBitmap(digitsDetectionBitmap)
+            image_screen.visibility = View.VISIBLE
+            image_digits.visibility = View.VISIBLE
+        }
     }
 
     override fun onResume() {

@@ -42,7 +42,10 @@ fun Mat.roi(roi: Rect, hPadding: Int = 0, vPadding: Int = 0): Pair<Mat, Rect> {
 }
 
 fun Mat.roi(roi: Rect, hPadding: Double = 0.0, vPadding: Double = 0.0): Pair<Mat, Rect> {
-    TODO()
+    // (hPadding >= 0.0 && vPadding >= 0.0).assert()
+    val hPaddingAbs = round(roi.width * hPadding).toInt()
+    val vPaddingAbs = round(roi.height * vPadding).toInt()
+    return this.roi(roi, hPaddingAbs, vPaddingAbs)
 }
 
 private fun ByteBuffer.toArray() = ByteArray(this.capacity())

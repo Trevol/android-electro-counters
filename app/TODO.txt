@@ -4,3 +4,14 @@
 - implement 90/180/270 degree rotation using vertical/horizontal flip
     https://acomputerengineer.com/2016/06/07/flip-imagebitmap-horizontally-and-vertically-in-android/
     https://stackoverflow.com/questions/36493977/flip-a-bitmap-image-horizontally-or-vertically
+
+
+how to debug with tcpip
+
+adb kill-server
+adb start-server
+
+adb tcpip 555
+adb connect 192.168.0.112:5555
+
+adb usb

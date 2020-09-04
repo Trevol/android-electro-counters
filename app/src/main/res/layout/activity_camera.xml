@@ -11,7 +11,7 @@
         android:id="@+id/view_preview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:scaleType="centerCrop"/>
+        android:scaleType="centerCrop" />
 
     <TextView
         android:id="@+id/text_timings"
@@ -22,8 +22,20 @@
         android:background="@android:color/white"
         android:textAllCaps="false"
         android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-        android:textSize="7pt"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:textSize="7pt" />
+
+    <ImageView
+        android:id="@+id/image_screen"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="22dp"
+        android:scaleType="fitStart" />
+
+    <ImageView
+        android:id="@+id/image_digits"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginTop="72dp"
+        android:scaleType="fitStart" />
 
 </FrameLayout>
