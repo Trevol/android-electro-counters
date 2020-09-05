@@ -153,7 +153,7 @@ class CameraActivity : AppCompatActivity() {
         for (d in detectionResult.digitsDetections) {
             screenImageCanvas.drawRect(d.box.toRectF(), screenPaint)
             digitsImageCanvas.drawRect(d.box.toRectF(), screenPaint)
-            TODO("digitsImageCanvas.drawText()")
+            // TODO("digitsImageCanvas.drawText()")
         }
 
 
