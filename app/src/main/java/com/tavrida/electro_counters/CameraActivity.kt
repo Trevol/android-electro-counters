@@ -122,6 +122,13 @@ class CameraActivity : AppCompatActivity() {
         strokeWidth = 1f
     }
 
+    val textPaint = Paint().apply {
+        color = Color.argb(255, 0, 255, 0)
+        style = Paint.Style.STROKE
+        strokeWidth = 1f
+        textSize = 12f
+    }
+
     private fun showDetectionResults(
         inputBitmap: Bitmap,
         detectionResult: TwoStageDetectionResult?,
@@ -151,9 +158,11 @@ class CameraActivity : AppCompatActivity() {
         val screenImageCanvas = Canvas(detectionResult.screenImage)
         val digitsImageCanvas = Canvas(digitsDetectionBitmap)
         for (d in detectionResult.digitsDetections) {
-            screenImageCanvas.drawRect(d.box.toRectF(), screenPaint)
-            digitsImageCanvas.drawRect(d.box.toRectF(), screenPaint)
+            val boxF = d.box.toRectF()
+            screenImageCanvas.drawRect(boxF, digitsPaint)
+            digitsImageCanvas.drawRect(boxF, digitsPaint)
             // TODO("digitsImageCanvas.drawText()")
+            digitsImageCanvas.drawText(d.classId.toString(), boxF.left+2, boxF.bottom-2, textPaint)
         }
 
 
