@@ -9,6 +9,9 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
+import android.util.Log
+import android.util.Size
+import android.view.Surface
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
@@ -52,15 +55,16 @@ class CameraActivity : AppCompatActivity() {
             // Camera provider is now guaranteed to be available
             val cameraProvider = cameraProviderFuture.get()
 
-            // Set up the view finder use case to display camera preview
-            /*val preview = Preview.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
-                .setTargetRotation(view_finder.display.rotation)
-                .build()*/
+            //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
+            val (w, h) = 1280 to 960
+            val targetRes = when (view_preview.display.rotation) {
+                Surface.ROTATION_90, Surface.ROTATION_270 -> Size(w, h)
+                Surface.ROTATION_0, Surface.ROTATION_180 -> Size(h, w)
+                else -> throw Exception("Unexpected display.rotation ${view_preview.display.rotation}")
+            }
 
-            // Set up the image analysis use case which will process frames in real time
             val imageAnalysis = ImageAnalysis.Builder()
-                .setTargetAspectRatio(AspectRatio.RATIO_4_3)
+                .setTargetResolution(targetRes)
                 .setTargetRotation(view_preview.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
@@ -75,8 +79,6 @@ class CameraActivity : AppCompatActivity() {
             val camera = cameraProvider.bindToLifecycle(
                 this as LifecycleOwner, cameraSelector, imageAnalysis
             )
-
-            // preview.setSurfaceProvider(view_finder.createSurfaceProvider())
 
             view_preview.afterMeasured { setupAutoFocus(view_preview, camera!!) }
 
@@ -139,7 +141,7 @@ class CameraActivity : AppCompatActivity() {
 
         if (detectionResult == null) {
             view_preview.post {
-                text_timings.text = timingTxt
+                text_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
                 view_preview.setImageBitmap(inputBitmap)
                 image_screen.visibility = View.GONE
                 image_digits.visibility = View.GONE
@@ -162,12 +164,17 @@ class CameraActivity : AppCompatActivity() {
             screenImageCanvas.drawRect(boxF, digitsPaint)
             digitsImageCanvas.drawRect(boxF, digitsPaint)
             // TODO("digitsImageCanvas.drawText()")
-            digitsImageCanvas.drawText(d.classId.toString(), boxF.left+2, boxF.bottom-2, textPaint)
+            digitsImageCanvas.drawText(
+                d.classId.toString(),
+                boxF.left + 2,
+                boxF.bottom - 2,
+                textPaint
+            )
         }
 
 
         view_preview.post {
-            text_timings.text = timingTxt
+            text_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
             view_preview.setImageBitmap(inputBitmap)
 
             image_screen.setImageBitmap(detectionResult.screenImage)
