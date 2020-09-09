@@ -38,6 +38,9 @@ class CameraActivity : AppCompatActivity() {
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
+    private var stopped = true
+    private val started get() = !stopped
+
 
     private val detectorProvider by lazy {
         TwoStageDigitsDetectorProvider(this)
@@ -46,7 +49,17 @@ class CameraActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
+        setAnalysisState()
+        buttonStartStop.setOnClickListener {
+            stopped = !stopped
+            setAnalysisState()
+        }
         detectorProvider.ensureDetector()
+    }
+
+    private fun setAnalysisState() {
+        val r = if (stopped) R.drawable.start_128 else R.drawable.stop_128
+        buttonStartStop.setBackgroundResource(r)
     }
 
     private fun bindCameraUseCases() = view_preview.post {
@@ -102,13 +115,25 @@ class CameraActivity : AppCompatActivity() {
             converter.yuvToRgb(image.image!!, bitmapBuffer)
         }
         val inputBitmap = bitmapBuffer.compensateSensorRotation(rotation)
-        val result = detectorProvider.detector.detect(inputBitmap, imageId)
 
-        val t1 = System.currentTimeMillis()
+        if (started) {
+            val result = detectorProvider.detector.detect(inputBitmap, imageId)
+            val t1 = System.currentTimeMillis()
+            showDetectionResults(inputBitmap, result, t1 - t0)
+            imageId++
+        }
+        else{
+            //simply show original frame
+            view_preview.post {
+                text_timings.text = ""
+                view_preview.setImageBitmap(inputBitmap)
+                image_screen.visibility = View.GONE
+                image_digits.visibility = View.GONE
+            }
+        }
 
-        showDetectionResults(inputBitmap, result, t1 - t0)
 
-        imageId++
+
 
     }
 
