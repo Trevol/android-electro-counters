@@ -1,3 +1,5 @@
+- start/stop (analysis) button
+- turn on/off frame saving
 - compare timings for
     - bitmap rotation (using Matrix)
     - opencv rotate(rotationCode)
