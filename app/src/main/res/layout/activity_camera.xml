@@ -2,59 +2,79 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/camera_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/black">
+    tools:context=".MainActivity">
 
     <ImageView
-        android:id="@+id/view_preview"
+        android:id="@+id/imageView_preview"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop" />
 
-    <TextView
-        android:id="@+id/text_timings"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="1dp"
-        android:layout_marginTop="1dp"
-        android:background="@android:color/white"
-        android:textAllCaps="false"
-        android:textAppearance="@style/TextAppearance.AppCompat.Display1"
-        android:textSize="7pt" />
-
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="60dp"
-        android:layout_marginTop="22dp"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:layout_height="match_parent">
 
-        <ImageView
-            android:id="@+id/image_screen"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:gravity="center"
+            android:orientation="horizontal"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageView
+                android:id="@+id/imageView_screen"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+
+
+            <ImageView
+                android:id="@+id/imageView_digits"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/buttonStartStop"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginBottom="50dp"
+            android:background="@drawable/stop_128"
+            android:contentDescription="Start or Stop"
+            android:scaleType="fitCenter"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent" />
+
+        <TextView
+            android:id="@+id/textView_timings"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:scaleType="fitStart" />
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginBottom="70dp"
+            android:background="#FFF"
+            android:paddingHorizontal="1dp"
+            android:text="999ms"
+            android:textAllCaps="false"
+            android:textSize="7pt"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent" />
 
-        <ImageView
-            android:id="@+id/image_digits"
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/recordingSwitch"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:scaleType="fitStart" />
-    </LinearLayout>
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="70dp"
+            android:text="Record"
+            android:textColor="#FFF"
+            android:textSize="7pt"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintRight_toRightOf="parent" />
 
-    <ImageButton
-        android:id="@+id/buttonStartStop"
-        android:layout_width="@dimen/round_button_medium"
-        android:layout_height="@dimen/round_button_medium"
-        android:layout_marginBottom="@dimen/shutter_button_margin"
-        android:scaleType="fitCenter"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        android:contentDescription="@string/capture_button_alt" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </FrameLayout>

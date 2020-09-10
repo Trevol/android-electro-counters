@@ -21,7 +21,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
-import com.tavrida.electro_counters.CameraActivity.Companion.save
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.toRectF
@@ -64,7 +63,7 @@ class CameraActivity : AppCompatActivity() {
         buttonStartStop.setBackgroundResource(r)
     }
 
-    private fun bindCameraUseCases() = view_preview.post {
+    private fun bindCameraUseCases() = imageView_preview.post {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
         cameraProviderFuture.addListener(Runnable {
             // Camera provider is now guaranteed to be available
@@ -72,15 +71,15 @@ class CameraActivity : AppCompatActivity() {
 
             //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
             val (w, h) = 1280 to 960
-            val targetRes = when (view_preview.display.rotation) {
+            val targetRes = when (imageView_preview.display.rotation) {
                 Surface.ROTATION_90, Surface.ROTATION_270 -> Size(w, h)
                 Surface.ROTATION_0, Surface.ROTATION_180 -> Size(h, w)
-                else -> throw Exception("Unexpected display.rotation ${view_preview.display.rotation}")
+                else -> throw Exception("Unexpected display.rotation ${imageView_preview.display.rotation}")
             }
 
             val imageAnalysis = ImageAnalysis.Builder()
                 .setTargetResolution(targetRes)
-                .setTargetRotation(view_preview.display.rotation)
+                .setTargetRotation(imageView_preview.display.rotation)
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
 
@@ -95,7 +94,7 @@ class CameraActivity : AppCompatActivity() {
                 this as LifecycleOwner, cameraSelector, imageAnalysis
             )
 
-            view_preview.afterMeasured { setupAutoFocus(view_preview, camera!!) }
+            imageView_preview.afterMeasured { setupAutoFocus(imageView_preview, camera!!) }
 
         }, ContextCompat.getMainExecutor(this))
     }
@@ -125,11 +124,11 @@ class CameraActivity : AppCompatActivity() {
             imageId++
         } else {
             //simply show original frame
-            view_preview.post {
-                text_timings.text = ""
-                view_preview.setImageBitmap(inputBitmap)
-                image_screen.visibility = View.GONE
-                image_digits.visibility = View.GONE
+            imageView_preview.post {
+                textView_timings.text = ""
+                imageView_preview.setImageBitmap(inputBitmap)
+                imageView_screen.visibility = View.GONE
+                imageView_digits.visibility = View.GONE
             }
         }
 
@@ -165,11 +164,11 @@ class CameraActivity : AppCompatActivity() {
         // Log.d(TAG, "Process frame in $timingTxt")
 
         if (detectionResult == null) {
-            view_preview.post {
-                text_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
-                view_preview.setImageBitmap(inputBitmap)
-                image_screen.visibility = View.GONE
-                image_digits.visibility = View.GONE
+            imageView_preview.post {
+                textView_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
+                imageView_preview.setImageBitmap(inputBitmap)
+                imageView_screen.visibility = View.GONE
+                imageView_digits.visibility = View.GONE
             }
             return
         }
@@ -199,14 +198,14 @@ class CameraActivity : AppCompatActivity() {
 
         // saveImages(imageId, inputBitmap, detectionResult.screenImage, digitsDetectionBitmap)
 
-        view_preview.post {
-            text_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
-            view_preview.setImageBitmap(inputBitmap)
+        imageView_preview.post {
+            textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
+            imageView_preview.setImageBitmap(inputBitmap)
 
-            image_screen.setImageBitmap(detectionResult.screenImage)
-            image_digits.setImageBitmap(digitsDetectionBitmap)
-            image_screen.visibility = View.VISIBLE
-            image_digits.visibility = View.VISIBLE
+            imageView_screen.setImageBitmap(detectionResult.screenImage)
+            imageView_digits.setImageBitmap(digitsDetectionBitmap)
+            imageView_screen.visibility = View.VISIBLE
+            imageView_digits.visibility = View.VISIBLE
         }
     }
     private fun saveImages(imageId: Int, inputImage: Bitmap, screenImage:Bitmap, digitsImage: Bitmap){
