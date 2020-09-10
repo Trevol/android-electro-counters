@@ -9,7 +9,6 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -22,10 +21,13 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
+import com.tavrida.electro_counters.CameraActivity.Companion.save
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.toRectF
 import kotlinx.android.synthetic.main.activity_camera.*
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -119,10 +121,9 @@ class CameraActivity : AppCompatActivity() {
         if (started) {
             val result = detectorProvider.detector.detect(inputBitmap, imageId)
             val t1 = System.currentTimeMillis()
-            showDetectionResults(inputBitmap, result, t1 - t0)
+            showDetectionResults(imageId, inputBitmap, result, t1 - t0)
             imageId++
-        }
-        else{
+        } else {
             //simply show original frame
             view_preview.post {
                 text_timings.text = ""
@@ -131,8 +132,6 @@ class CameraActivity : AppCompatActivity() {
                 image_digits.visibility = View.GONE
             }
         }
-
-
 
 
     }
@@ -157,6 +156,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun showDetectionResults(
+        imageId: Int,
         inputBitmap: Bitmap,
         detectionResult: TwoStageDetectionResult?,
         duration: Long
@@ -197,6 +197,7 @@ class CameraActivity : AppCompatActivity() {
             )
         }
 
+        // saveImages(imageId, inputBitmap, detectionResult.screenImage, digitsDetectionBitmap)
 
         view_preview.post {
             text_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
@@ -207,6 +208,13 @@ class CameraActivity : AppCompatActivity() {
             image_screen.visibility = View.VISIBLE
             image_digits.visibility = View.VISIBLE
         }
+    }
+    private fun saveImages(imageId: Int, inputImage: Bitmap, screenImage:Bitmap, digitsImage: Bitmap){
+        val framesDir = File(filesDir, "results").apply { mkdirs() }
+        val num = imageId.padStartEx(4, '0')
+        inputImage.save(File(framesDir, "${num}_input.jpg"))
+        screenImage.save(File(framesDir, "${num}_screen.jpg"))
+        digitsImage.save(File(framesDir, "${num}_digits.jpg"))
     }
 
     override fun onResume() {
@@ -270,5 +278,12 @@ class CameraActivity : AppCompatActivity() {
                     .build()
             camera.cameraControl.startFocusAndMetering(focusMeteringAction)
         }
+
+        fun Bitmap.save(file: File) = FileOutputStream(file).use { fs ->
+            this.compress(Bitmap.CompressFormat.JPEG, 90, fs)
+        }
+
+        fun Any.padStartEx(length: Int, padChar: Char) = toString().padStart(length, padChar)
+
     }
 }

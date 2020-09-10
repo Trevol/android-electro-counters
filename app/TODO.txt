@@ -1,4 +1,5 @@
 - start/stop (analysis) button
+  - also tap to screen to start/stop
 - turn on/off frame saving
 - compare timings for
     - bitmap rotation (using Matrix)
