@@ -310,6 +310,7 @@ class CameraActivity : AppCompatActivity() {
         }
 
         fun setupAutoFocus(viewFinder: View, camera: Camera) {
+            //see also https://developer.android.com/training/camerax/configuration#control-focus
             val width = viewFinder.width.toFloat()
             val height = viewFinder.height.toFloat()
 
