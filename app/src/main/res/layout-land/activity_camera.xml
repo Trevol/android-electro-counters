@@ -41,13 +41,13 @@
             android:id="@+id/buttonStartStop"
             android:layout_width="64dp"
             android:layout_height="64dp"
-            android:layout_marginBottom="@dimen/buttonStartStop_margin"
+            android:layout_marginEnd="@dimen/buttonStartStop_margin"
             android:background="@drawable/stop_128"
             android:contentDescription="Start or Stop"
             android:scaleType="fitCenter"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent" />
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/textView_timings"
@@ -74,7 +74,6 @@
             android:textSize="7pt"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintRight_toRightOf="parent" />
-
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

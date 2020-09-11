@@ -186,7 +186,7 @@ fun Mat.compensateSensorRotation(dst: Mat, sensorRotationDegrees: Int): Mat {
 
 fun Bitmap.compensateSensorRotation(sensorRotationDegrees: Int) =
     if (sensorRotationDegrees == 0) {
-        this
+        Bitmap.createBitmap(this)
     } else
         Bitmap.createBitmap(
             this, 0, 0, this.width, this.height,

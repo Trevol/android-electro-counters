@@ -4,17 +4,16 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.*
 import android.os.Bundle
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
+import androidx.camera.core.Camera
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -50,17 +49,26 @@ class CameraActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
-        setAnalysisState()
+        syncAnalysisUIState()
+
+        imageView_preview.setOnClickListener {
+            startStopListener()
+        }
         buttonStartStop.setOnClickListener {
-            stopped = !stopped
-            setAnalysisState()
+            startStopListener()
         }
         detectorProvider.ensureDetector()
     }
 
-    private fun setAnalysisState() {
+    fun startStopListener() {
+        stopped = !stopped
+        syncAnalysisUIState()
+    }
+
+    private fun syncAnalysisUIState() {
         val r = if (stopped) R.drawable.start_128 else R.drawable.stop_128
         buttonStartStop.setBackgroundResource(r)
+        textView_timings.visibility = if (stopped) View.INVISIBLE else View.VISIBLE
     }
 
     private fun bindCameraUseCases() = imageView_preview.post {
@@ -131,8 +139,6 @@ class CameraActivity : AppCompatActivity() {
                 imageView_digits.visibility = View.GONE
             }
         }
-
-
     }
 
     val screenPaint = Paint().apply {
@@ -148,10 +154,40 @@ class CameraActivity : AppCompatActivity() {
     }
 
     val textPaint = Paint().apply {
-        color = Color.argb(255, 0, 255, 0)
-        style = Paint.Style.STROKE
+        color = Color.argb(255, 255, 0, 0)
+        style = Paint.Style.FILL_AND_STROKE
         strokeWidth = 1f
-        textSize = 12f
+        textSize = 24f
+    }
+
+    private val textPaintFontSizeSetter = PaintFontSizeSetter(textPaint)
+
+    private class PaintFontSizeSetter(val paint: Paint) {
+        private val refSize = 50f
+        private val refText = "0"
+        private val refBounds = Rect()
+
+        init {
+            precalcReferenceSize()
+        }
+
+        private fun precalcReferenceSize() {
+            paint.textSize = refSize
+            paint.getTextBounds(refText, 0, refText.length, refBounds)
+
+        }
+
+        fun setTextSizeForWidth(desiredWidth: Float, text: String) {
+            // got here https://stackoverflow.com/a/21895626
+            val desiredTextSize: Float = refSize * desiredWidth / refBounds.width()
+            paint.textSize = desiredTextSize
+        }
+
+        fun setTextSizeForHeight(desiredHeight: Float, text: String) {
+            // got here https://stackoverflow.com/a/21895626
+            val desiredTextSize: Float = refSize * desiredHeight / refBounds.height()
+            paint.textSize = desiredTextSize
+        }
     }
 
     private fun showDetectionResults(
@@ -187,9 +223,13 @@ class CameraActivity : AppCompatActivity() {
             val boxF = d.box.toRectF()
             screenImageCanvas.drawRect(boxF, digitsPaint)
             digitsImageCanvas.drawRect(boxF, digitsPaint)
-            // TODO("digitsImageCanvas.drawText()")
+
+            val text = d.classId.toString()
+            //calc and set fontSize to fit in box
+            // TODO("setTextSizeForBox")
+            textPaintFontSizeSetter.setTextSizeForHeight(boxF.height() - 4, text)
             digitsImageCanvas.drawText(
-                d.classId.toString(),
+                text,
                 boxF.left + 2,
                 boxF.bottom - 2,
                 textPaint
@@ -208,7 +248,14 @@ class CameraActivity : AppCompatActivity() {
             imageView_digits.visibility = View.VISIBLE
         }
     }
-    private fun saveImages(imageId: Int, inputImage: Bitmap, screenImage:Bitmap, digitsImage: Bitmap){
+
+
+    private fun saveImages(
+        imageId: Int,
+        inputImage: Bitmap,
+        screenImage: Bitmap,
+        digitsImage: Bitmap
+    ) {
         val framesDir = File(filesDir, "results").apply { mkdirs() }
         val num = imageId.padStartEx(4, '0')
         inputImage.save(File(framesDir, "${num}_input.jpg"))

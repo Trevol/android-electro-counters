@@ -1,5 +1,9 @@
-- start/stop (analysis) button
-  - also tap to screen to start/stop
+++ start/stop (analysis) button
+  ++ also tap to screen to start/stop
+
+++ draw digits with correct font size (fit into box)
+++ не рисуется рамка вокруг обнаруженного экрана счетчика в альбомной ориентации
+
 - turn on/off frame saving
 - compare timings for
     - bitmap rotation (using Matrix)
