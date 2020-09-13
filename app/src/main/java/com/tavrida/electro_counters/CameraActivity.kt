@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -40,6 +39,7 @@ class CameraActivity : AppCompatActivity() {
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
     private var stopped = true
     private val started get() = !stopped
+    private var recordingEnabled = false
 
 
     private val detectorProvider by lazy {
@@ -56,6 +56,10 @@ class CameraActivity : AppCompatActivity() {
         }
         buttonStartStop.setOnClickListener {
             startStopListener()
+        }
+        recordingSwitch.isChecked = recordingEnabled
+        recordingSwitch.setOnCheckedChangeListener { compoundButton, isChecked ->
+            recordingEnabled = isChecked
         }
         detectorProvider.ensureDetector()
     }
@@ -226,7 +230,6 @@ class CameraActivity : AppCompatActivity() {
 
             val text = d.classId.toString()
             //calc and set fontSize to fit in box
-            // TODO("setTextSizeForBox")
             textPaintFontSizeSetter.setTextSizeForHeight(boxF.height() - 4, text)
             digitsImageCanvas.drawText(
                 text,
@@ -258,9 +261,9 @@ class CameraActivity : AppCompatActivity() {
     ) {
         val framesDir = File(filesDir, "results").apply { mkdirs() }
         val num = imageId.padStartEx(4, '0')
-        inputImage.save(File(framesDir, "${num}_input.jpg"))
-        screenImage.save(File(framesDir, "${num}_screen.jpg"))
-        digitsImage.save(File(framesDir, "${num}_digits.jpg"))
+        inputImage.saveAsJpeg(File(framesDir, "${num}_input.jpg"))
+        screenImage.saveAsJpeg(File(framesDir, "${num}_screen.jpg"))
+        digitsImage.saveAsJpeg(File(framesDir, "${num}_digits.jpg"))
     }
 
     override fun onResume() {
@@ -326,8 +329,8 @@ class CameraActivity : AppCompatActivity() {
             camera.cameraControl.startFocusAndMetering(focusMeteringAction)
         }
 
-        fun Bitmap.save(file: File) = FileOutputStream(file).use { fs ->
-            this.compress(Bitmap.CompressFormat.JPEG, 90, fs)
+        fun Bitmap.saveAsJpeg(file: File, quality: Int = 100) = FileOutputStream(file).use { fs ->
+            this.compress(Bitmap.CompressFormat.JPEG, quality, fs)
         }
 
         fun Any.padStartEx(length: Int, padChar: Char) = toString().padStart(length, padChar)

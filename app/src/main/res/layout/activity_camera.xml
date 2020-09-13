@@ -64,7 +64,6 @@
             app:layout_constraintLeft_toLeftOf="parent" />
 
         <androidx.appcompat.widget.SwitchCompat
-            android:visibility="gone"
             android:id="@+id/recordingSwitch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
