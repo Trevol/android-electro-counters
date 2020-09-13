@@ -5,6 +5,9 @@
 ++ не рисуется рамка вокруг обнаруженного экрана счетчика в альбомной ориентации
 
 - turn on/off frame saving
+- align consecutive frames to compensate camera motion
+   - https://www.learnopencv.com/image-alignment-feature-based-using-opencv-c-python/
+   - https://www.learnopencv.com/homography-examples-using-opencv-python-c/
 - compare timings for
     - bitmap rotation (using Matrix)
     - opencv rotate(rotationCode)
@@ -15,6 +18,7 @@
    - https://towardsdatascience.com/real-time-mobile-video-object-detection-using-tensorflow-a75fa0c5859d
    - https://medium.com/tensorflow/training-and-serving-a-realtime-mobile-object-detector-in-30-minutes-with-cloud-tpus-b78971cf1193
    - EfficientDet SSDLite
+         - https://medium.com/@namvu1291/deploy-your-own-ssdlite-mobiledet-object-detector-on-google-corals-edgetpu-using-tensorflow-s-f41f1e3360c8
    -
 
 
