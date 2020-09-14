@@ -186,13 +186,15 @@ fun Mat.compensateSensorRotation(dst: Mat, sensorRotationDegrees: Int): Mat {
 
 fun Bitmap.compensateSensorRotation(sensorRotationDegrees: Int) =
     if (sensorRotationDegrees == 0) {
-        Bitmap.createBitmap(this)
+        this.copy()
     } else
         Bitmap.createBitmap(
             this, 0, 0, this.width, this.height,
             Matrix().apply { postRotate(sensorRotationDegrees.toFloat()) },
             false
         )
+
+fun Bitmap.copy(isMutable: Boolean = true) = copy(this.config, isMutable)
 
 fun Bitmap.center() = Point(width / 2.0, height / 2.0)
 

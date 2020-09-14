@@ -19,9 +19,10 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
+import com.tavrida.electro_counters.drawing.DetectionDrawer
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
-import com.tavrida.utils.toRectF
+import com.tavrida.utils.copy
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.io.File
 import java.io.FileOutputStream
@@ -41,6 +42,7 @@ class CameraActivity : AppCompatActivity() {
     private val started get() = !stopped
     private var recordingEnabled = false
 
+    val detectionDrawer = DetectionDrawer()
 
     private val detectorProvider by lazy {
         TwoStageDigitsDetectorProvider(this)
@@ -145,54 +147,6 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    val screenPaint = Paint().apply {
-        color = Color.argb(255, 255, 0, 0)
-        style = Paint.Style.STROKE
-        strokeWidth = 2f
-    }
-
-    val digitsPaint = Paint().apply {
-        color = Color.argb(255, 0, 255, 0)
-        style = Paint.Style.STROKE
-        strokeWidth = 1f
-    }
-
-    val textPaint = Paint().apply {
-        color = Color.argb(255, 255, 0, 0)
-        style = Paint.Style.FILL_AND_STROKE
-        strokeWidth = 1f
-        textSize = 24f
-    }
-
-    private val textPaintFontSizeSetter = PaintFontSizeSetter(textPaint)
-
-    private class PaintFontSizeSetter(val paint: Paint) {
-        private val refSize = 50f
-        private val refText = "0"
-        private val refBounds = Rect()
-
-        init {
-            precalcReferenceSize()
-        }
-
-        private fun precalcReferenceSize() {
-            paint.textSize = refSize
-            paint.getTextBounds(refText, 0, refText.length, refBounds)
-
-        }
-
-        fun setTextSizeForWidth(desiredWidth: Float, text: String) {
-            // got here https://stackoverflow.com/a/21895626
-            val desiredTextSize: Float = refSize * desiredWidth / refBounds.width()
-            paint.textSize = desiredTextSize
-        }
-
-        fun setTextSizeForHeight(desiredHeight: Float, text: String) {
-            // got here https://stackoverflow.com/a/21895626
-            val desiredTextSize: Float = refSize * desiredHeight / refBounds.height()
-            paint.textSize = desiredTextSize
-        }
-    }
 
     private fun showDetectionResults(
         imageId: Int,
@@ -212,40 +166,20 @@ class CameraActivity : AppCompatActivity() {
             }
             return
         }
-        val canvas = Canvas(inputBitmap)
-        canvas.drawRect(detectionResult.screenLocation, screenPaint)
 
-        val digitsDetectionBitmap = Bitmap.createBitmap(
-            detectionResult.screenImage.width,
-            detectionResult.screenImage.height,
-            Bitmap.Config.ARGB_8888
-        ).apply { eraseColor(Color.argb(255, 0, 0, 0)) }
-
-        val screenImageCanvas = Canvas(detectionResult.screenImage)
-        val digitsImageCanvas = Canvas(digitsDetectionBitmap)
-        for (d in detectionResult.digitsDetections) {
-            val boxF = d.box.toRectF()
-            screenImageCanvas.drawRect(boxF, digitsPaint)
-            digitsImageCanvas.drawRect(boxF, digitsPaint)
-
-            val text = d.classId.toString()
-            //calc and set fontSize to fit in box
-            textPaintFontSizeSetter.setTextSizeForHeight(boxF.height() - 4, text)
-            digitsImageCanvas.drawText(
-                text,
-                boxF.left + 2,
-                boxF.bottom - 2,
-                textPaint
-            )
-        }
+        val (inputBitmapWithDrawing, screenImageWithDrawing, digitsDetectionBitmap) = detectionDrawer.drawDetectionResults(
+            inputBitmap.copy(),
+            detectionResult.screenImage.copy(),
+            detectionResult
+        )
 
         // saveImages(imageId, inputBitmap, detectionResult.screenImage, digitsDetectionBitmap)
 
         imageView_preview.post {
             textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
-            imageView_preview.setImageBitmap(inputBitmap)
+            imageView_preview.setImageBitmap(inputBitmapWithDrawing)
 
-            imageView_screen.setImageBitmap(detectionResult.screenImage)
+            imageView_screen.setImageBitmap(screenImageWithDrawing)
             imageView_digits.setImageBitmap(digitsDetectionBitmap)
             imageView_screen.visibility = View.VISIBLE
             imageView_digits.visibility = View.VISIBLE
@@ -337,3 +271,5 @@ class CameraActivity : AppCompatActivity() {
 
     }
 }
+
+
