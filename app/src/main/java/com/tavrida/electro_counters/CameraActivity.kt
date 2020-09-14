@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
+import android.os.Environment
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -25,7 +26,6 @@ import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.copy
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.io.File
-import java.io.FileOutputStream
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -42,10 +42,23 @@ class CameraActivity : AppCompatActivity() {
     private val started get() = !stopped
     private var recordingEnabled = false
 
+    private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
+    private lateinit var bitmapBuffer: Bitmap
+
     val detectionDrawer = DetectionDrawer()
 
     private val detectorProvider by lazy {
         TwoStageDigitsDetectorProvider(this)
+    }
+
+    val detectionLogger by lazy {
+        // val logDir = File(
+        //     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+        //      "android-electro-counters/detections_log"
+        // )
+        TODO("Save to location accessible by user")
+        val logDir = File(filesDir, "detections_log")
+        DetectionLogger(recordingEnabled, logDir)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,8 +75,10 @@ class CameraActivity : AppCompatActivity() {
         recordingSwitch.isChecked = recordingEnabled
         recordingSwitch.setOnCheckedChangeListener { compoundButton, isChecked ->
             recordingEnabled = isChecked
+            detectionLogger.loggingEnabled = recordingEnabled
         }
         detectorProvider.ensureDetector()
+        detectionLogger //trigger creation
     }
 
     fun startStopListener() {
@@ -113,9 +128,6 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private val converter by lazy { YuvToRgbConverter(this) }
-    private lateinit var bitmapBuffer: Bitmap
-
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
         val t0 = System.currentTimeMillis()
@@ -127,7 +139,7 @@ class CameraActivity : AppCompatActivity() {
             )
         }
         image.use {
-            converter.yuvToRgb(image.image!!, bitmapBuffer)
+            yuvToRgbConverter.yuvToRgb(image.image!!, bitmapBuffer)
         }
         val inputBitmap = bitmapBuffer.compensateSensorRotation(rotation)
 
@@ -158,6 +170,7 @@ class CameraActivity : AppCompatActivity() {
         // Log.d(TAG, "Process frame in $timingTxt")
 
         if (detectionResult == null) {
+            detectionLogger.log(inputBitmap, duration)
             imageView_preview.post {
                 textView_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
                 imageView_preview.setImageBitmap(inputBitmap)
@@ -173,7 +186,14 @@ class CameraActivity : AppCompatActivity() {
             detectionResult
         )
 
-        // saveImages(imageId, inputBitmap, detectionResult.screenImage, digitsDetectionBitmap)
+        detectionLogger.log(
+            detectionResult,
+            inputBitmap,
+            inputBitmapWithDrawing,
+            screenImageWithDrawing,
+            digitsDetectionBitmap,
+            duration
+        )
 
         imageView_preview.post {
             textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
@@ -186,19 +206,6 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-
-    private fun saveImages(
-        imageId: Int,
-        inputImage: Bitmap,
-        screenImage: Bitmap,
-        digitsImage: Bitmap
-    ) {
-        val framesDir = File(filesDir, "results").apply { mkdirs() }
-        val num = imageId.padStartEx(4, '0')
-        inputImage.saveAsJpeg(File(framesDir, "${num}_input.jpg"))
-        screenImage.saveAsJpeg(File(framesDir, "${num}_screen.jpg"))
-        digitsImage.saveAsJpeg(File(framesDir, "${num}_digits.jpg"))
-    }
 
     override fun onResume() {
         super.onResume()
@@ -263,9 +270,6 @@ class CameraActivity : AppCompatActivity() {
             camera.cameraControl.startFocusAndMetering(focusMeteringAction)
         }
 
-        fun Bitmap.saveAsJpeg(file: File, quality: Int = 100) = FileOutputStream(file).use { fs ->
-            this.compress(Bitmap.CompressFormat.JPEG, quality, fs)
-        }
 
         fun Any.padStartEx(length: Int, padChar: Char) = toString().padStart(length, padChar)
 
