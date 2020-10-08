@@ -30,7 +30,7 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
         sessionId = if (enabled) createTimestamp() else ""
         var d: Boolean
         if (enabled) {
-            TODO("check dir existence and creation")
+            // TODO("check dir existence and creation")
             val r = logDir.mkdirs()
             d = r
         }

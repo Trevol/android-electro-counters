@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
 import android.os.Environment
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -56,7 +57,7 @@ class CameraActivity : AppCompatActivity() {
         //     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
         //      "android-electro-counters/detections_log"
         // )
-        TODO("Save to location accessible by user")
+        // TODO("Save to location accessible by user")
         val logDir = File(filesDir, "detections_log")
         DetectionLogger(recordingEnabled, logDir)
     }
@@ -97,7 +98,7 @@ class CameraActivity : AppCompatActivity() {
         cameraProviderFuture.addListener(Runnable {
             // Camera provider is now guaranteed to be available
             val cameraProvider = cameraProviderFuture.get()
-
+            
             //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
             val (w, h) = 1280 to 960
             val targetRes = when (imageView_preview.display.rotation) {
