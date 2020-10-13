@@ -6,8 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
-import android.os.Environment
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -19,12 +17,8 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
-import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
-import com.tavrida.electro_counters.drawing.DetectionDrawer
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
-import com.tavrida.utils.copy
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.io.File
 import java.util.concurrent.Executors
@@ -41,28 +35,14 @@ class CameraActivity : AppCompatActivity() {
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
     private var stopped = true
     private val started get() = !stopped
-    private var recordingEnabled = false
 
     private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
     private lateinit var bitmapBuffer: Bitmap
 
-    val detectionDrawer = DetectionDrawer()
-
-    private val detectorProvider by lazy {
-        TwoStageDigitsDetectorProvider(this)
-    }
-
-    val detectionLogger by lazy {
-        // val logDir = File(
-        //     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-        //      "android-electro-counters/detections_log"
-        // )
-        // TODO("Save to location accessible by user")
-        val logDir = File(filesDir, "detections_log")
-        DetectionLogger(recordingEnabled, logDir)
-    }
+    val framesStorage by lazy { FramesStorage(File(filesDir, "frames")) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Long.MAX_VALUE
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
         syncAnalysisUIState()
@@ -73,24 +53,19 @@ class CameraActivity : AppCompatActivity() {
         buttonStartStop.setOnClickListener {
             startStopListener()
         }
-        recordingSwitch.isChecked = recordingEnabled
-        recordingSwitch.setOnCheckedChangeListener { compoundButton, isChecked ->
-            recordingEnabled = isChecked
-            detectionLogger.loggingEnabled = recordingEnabled
-        }
-        detectorProvider.ensureDetector()
-        detectionLogger //trigger creation
+
+        framesStorage //trigger creation
     }
 
     fun startStopListener() {
         stopped = !stopped
+        framesStorage.toggleSession(started)
         syncAnalysisUIState()
     }
 
     private fun syncAnalysisUIState() {
         val r = if (stopped) R.drawable.start_128 else R.drawable.stop_128
         buttonStartStop.setBackgroundResource(r)
-        textView_timings.visibility = if (stopped) View.INVISIBLE else View.VISIBLE
     }
 
     private fun bindCameraUseCases() = imageView_preview.post {
@@ -98,7 +73,7 @@ class CameraActivity : AppCompatActivity() {
         cameraProviderFuture.addListener(Runnable {
             // Camera provider is now guaranteed to be available
             val cameraProvider = cameraProviderFuture.get()
-            
+
             //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
             val (w, h) = 1280 to 960
             val targetRes = when (imageView_preview.display.rotation) {
@@ -144,67 +119,13 @@ class CameraActivity : AppCompatActivity() {
         }
         val inputBitmap = bitmapBuffer.compensateSensorRotation(rotation)
 
-        if (started) {
-            val result = detectorProvider.detector.detect(inputBitmap, imageId)
-            val t1 = System.currentTimeMillis()
-            showDetectionResults(imageId, inputBitmap, result, t1 - t0)
-            imageId++
-        } else {
-            //simply show original frame
-            imageView_preview.post {
-                textView_timings.text = ""
-                imageView_preview.setImageBitmap(inputBitmap)
-                imageView_screen.visibility = View.GONE
-                imageView_digits.visibility = View.GONE
-            }
-        }
-    }
-
-
-    private fun showDetectionResults(
-        imageId: Int,
-        inputBitmap: Bitmap,
-        detectionResult: TwoStageDetectionResult?,
-        duration: Long
-    ) {
-        val timingTxt = "${duration}ms"
-        // Log.d(TAG, "Process frame in $timingTxt")
-
-        if (detectionResult == null) {
-            detectionLogger.log(inputBitmap, duration)
-            imageView_preview.post {
-                textView_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
-                imageView_preview.setImageBitmap(inputBitmap)
-                imageView_screen.visibility = View.GONE
-                imageView_digits.visibility = View.GONE
-            }
-            return
-        }
-
-        val (inputBitmapWithDrawing, screenImageWithDrawing, digitsDetectionBitmap) = detectionDrawer.drawDetectionResults(
-            inputBitmap.copy(),
-            detectionResult.screenImage.copy(),
-            detectionResult
-        )
-
-        detectionLogger.log(
-            detectionResult,
-            inputBitmap,
-            inputBitmapWithDrawing,
-            screenImageWithDrawing,
-            digitsDetectionBitmap,
-            duration
-        )
-
         imageView_preview.post {
-            textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
-            imageView_preview.setImageBitmap(inputBitmapWithDrawing)
-
-            imageView_screen.setImageBitmap(screenImageWithDrawing)
-            imageView_digits.setImageBitmap(digitsDetectionBitmap)
-            imageView_screen.visibility = View.VISIBLE
-            imageView_digits.visibility = View.VISIBLE
+            if (started) {
+                framesStorage.addFrame(inputBitmap)
+            }
+            imageView_preview.setImageBitmap(inputBitmap)
         }
+
     }
 
 
@@ -255,6 +176,7 @@ class CameraActivity : AppCompatActivity() {
         }
 
         fun setupAutoFocus(viewFinder: View, camera: Camera) {
+            return
             //see also https://developer.android.com/training/camerax/configuration#control-focus
             val width = viewFinder.width.toFloat()
             val height = viewFinder.height.toFloat()
@@ -271,8 +193,6 @@ class CameraActivity : AppCompatActivity() {
             camera.cameraControl.startFocusAndMetering(focusMeteringAction)
         }
 
-
-        fun Any.padStartEx(length: Int, padChar: Char) = toString().padStart(length, padChar)
 
     }
 }
