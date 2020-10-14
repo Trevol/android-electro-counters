@@ -42,7 +42,6 @@ class CameraActivity : AppCompatActivity() {
     val framesStorage by lazy { FramesStorage(File(filesDir, "frames")) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Long.MAX_VALUE
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
         syncAnalysisUIState()
