@@ -60,7 +60,7 @@ dependencies {
     // EXIF Interface
     implementation 'androidx.exifinterface:exifinterface:1.2.0'
     implementation project(path: ':sdk')
-    implementation 'androidx.camera:camera-core:1.0.0-beta08'
+    implementation 'androidx.camera:camera-core:1.0.0-beta11'
 
     // Unit testing
     testImplementation 'androidx.test.ext:junit:1.1.2'
