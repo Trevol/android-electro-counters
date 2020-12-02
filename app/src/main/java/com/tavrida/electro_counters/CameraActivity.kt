@@ -22,6 +22,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
 import com.tavrida.electro_counters.drawing.DetectionDrawer
+import com.tavrida.utils.Bitmap2RGBMatConverter
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.copy
@@ -44,6 +45,7 @@ class CameraActivity : AppCompatActivity() {
     private var recordingEnabled = false
 
     private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
+    private val imageConverter by lazy { Bitmap2RGBMatConverter() }
     private lateinit var bitmapBuffer: Bitmap
 
     val detectionDrawer = DetectionDrawer()
@@ -53,11 +55,6 @@ class CameraActivity : AppCompatActivity() {
     }
 
     val detectionLogger by lazy {
-        // val logDir = File(
-        //     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-        //      "android-electro-counters/detections_log"
-        // )
-        // TODO("Save to location accessible by user")
         val logDir = File(filesDir, "detections_log")
         DetectionLogger(recordingEnabled, logDir)
     }
@@ -98,7 +95,7 @@ class CameraActivity : AppCompatActivity() {
         cameraProviderFuture.addListener(Runnable {
             // Camera provider is now guaranteed to be available
             val cameraProvider = cameraProviderFuture.get()
-            
+
             //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
             val (w, h) = 1280 to 960
             val targetRes = when (imageView_preview.display.rotation) {
@@ -145,10 +142,10 @@ class CameraActivity : AppCompatActivity() {
         val inputBitmap = bitmapBuffer.compensateSensorRotation(rotation)
 
         if (started) {
-            val result = detectorProvider.detector.detect(inputBitmap, imageId)
+            val detectorInput = imageConverter.convert(inputBitmap)
+            val result = detectorProvider.detector.detect(detectorInput)
             val t1 = System.currentTimeMillis()
-            showDetectionResults(imageId, inputBitmap, result, t1 - t0)
-            imageId++
+            showDetectionResults(inputBitmap, result, t1 - t0)
         } else {
             //simply show original frame
             imageView_preview.post {
@@ -162,7 +159,6 @@ class CameraActivity : AppCompatActivity() {
 
 
     private fun showDetectionResults(
-        imageId: Int,
         inputBitmap: Bitmap,
         detectionResult: TwoStageDetectionResult?,
         duration: Long
@@ -239,7 +235,6 @@ class CameraActivity : AppCompatActivity() {
     }
 
     companion object {
-        private var imageId = 0
         private val TAG = CameraActivity::class.java.simpleName
 
         inline fun View.afterMeasured(crossinline block: () -> Unit) {

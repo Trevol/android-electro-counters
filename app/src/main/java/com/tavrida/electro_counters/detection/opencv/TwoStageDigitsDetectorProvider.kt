@@ -21,11 +21,7 @@ class TwoStageDigitsDetectorProvider(context: Context) {
                 screenDetector = createDarknetDetector(context, screenModelCfg, screenModelWeights)
                 digitsDetector = createDarknetDetector(context, digitsModelCfg, digitsModelWeights)
             }
-            return TwoStageDigitsDetector(
-                screenDetector, digitsDetector,
-                context,
-                null
-            )
+            return TwoStageDigitsDetector(screenDetector, digitsDetector)
         }
     }
 
