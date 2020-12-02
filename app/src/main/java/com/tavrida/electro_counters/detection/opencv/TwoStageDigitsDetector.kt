@@ -18,8 +18,8 @@ class TwoStageDigitsDetector(
         val digitsDetections = digitsDetector.detect(screenImg).detections
         // return screenLocation: RectF, screenImage: Bitmap, digitsDetections (inside screen image)
         return TwoStageDetectionResult(
-            screenRoi.toRectF(),
-            screenImg.toBitmap(),
+            screenRoi,
+            screenImg,
             digitsDetections
         )
     }

@@ -26,6 +26,7 @@ import com.tavrida.utils.Bitmap2RGBMatConverter
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.copy
+import com.tavrida.utils.toBitmap
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.io.File
 import java.util.concurrent.Executors
@@ -179,7 +180,7 @@ class CameraActivity : AppCompatActivity() {
 
         val (inputBitmapWithDrawing, screenImageWithDrawing, digitsDetectionBitmap) = detectionDrawer.drawDetectionResults(
             inputBitmap.copy(),
-            detectionResult.screenImage.copy(),
+            detectionResult.screenImage.toBitmap(),
             detectionResult
         )
 

@@ -40,11 +40,11 @@ class DetectionDrawer {
         detectionResult: TwoStageDetectionResult
     ): DrawResult {
 
-        Canvas(inputImage).drawRect(detectionResult.screenLocation, screenPaint)
+        Canvas(inputImage).drawRect(detectionResult.screenLocation.toRectF(), screenPaint)
 
         val digitsDetectionBitmap = Bitmap.createBitmap(
-            detectionResult.screenImage.width,
-            detectionResult.screenImage.height,
+            detectionResult.screenImage.cols(),
+            detectionResult.screenImage.rows(),
             Bitmap.Config.ARGB_8888
         ).apply { eraseColor(gray) }
 

@@ -1,10 +1,10 @@
 package com.tavrida.ElectroCounters.detection
 
-import android.graphics.Bitmap
-import android.graphics.RectF
+import org.opencv.core.Mat
+import org.opencv.core.Rect
 
 data class TwoStageDetectionResult(
-    val screenLocation: RectF,
-    val screenImage: Bitmap,
+    val screenLocation: Rect,
+    val screenImage: Mat,
     val digitsDetections: Collection<ObjectDetectionResult>
 )

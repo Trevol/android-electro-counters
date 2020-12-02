@@ -5,6 +5,7 @@ import android.graphics.RectF
 import com.tavrida.ElectroCounters.detection.ObjectDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
 import com.tavrida.utils.saveAsJpeg
+import org.opencv.core.Rect
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -34,19 +35,6 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
             val r = logDir.mkdirs()
             d = r
         }
-    }
-
-    private fun saveImages(
-        imageId: Int,
-        inputImage: Bitmap,
-        screenImage: Bitmap,
-        digitsImage: Bitmap
-    ) {
-        /*val framesDir = File(filesDir, "results").apply { mkdirs() }
-        val num = imageId.padStartEx(4, '0')
-        inputImage.saveAsJpeg(File(framesDir, "${num}_input.jpg"))
-        screenImage.saveAsJpeg(File(framesDir, "${num}_screen.jpg"))
-        digitsImage.saveAsJpeg(File(framesDir, "${num}_digits.jpg"))*/
     }
 
     fun log(
@@ -106,7 +94,7 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
     }
 
     private companion object {
-        fun RectF.toLogString() = "$left $top $right $bottom"
+        fun Rect.toLogString() = "$x $y $width $height"
         private fun ObjectDetectionResult.toLogString(): String {
             return "${box.x} ${box.y} ${box.width} ${box.height} $classId $classScore"
         }

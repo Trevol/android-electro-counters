@@ -1,7 +1,9 @@
 package com.tavrida.utils
 
 import org.opencv.core.*
+import org.opencv.imgcodecs.Imgcodecs
 import org.opencv.imgproc.Imgproc
+import java.io.File
 import java.security.InvalidParameterException
 import kotlin.math.max
 import kotlin.math.min
@@ -10,8 +12,10 @@ import kotlin.math.round
 fun Mat.center() = Point(cols() / 2.0, rows() / 2.0)
 
 fun Mat.copy() = Mat().also { this.copyTo(it) }
+
 fun Mat.bgr2rgbInplace() = this.also { Imgproc.cvtColor(this, it, Imgproc.COLOR_BGR2RGB) }
-fun Mat.bgr2rgb() = Mat().also { rgb -> Imgproc.cvtColor(this, rgb, Imgproc.COLOR_RGB2BGR) }
+fun Mat.bgr2rgb() = Mat().also { rgb -> Imgproc.cvtColor(this, rgb, Imgproc.COLOR_BGR2RGB) }
+fun Mat.bgr2gray() = Mat().also { rgb -> Imgproc.cvtColor(this, rgb, Imgproc.COLOR_BGR2GRAY) }
 fun Mat.rgb2bgr() = Mat().also { bgr -> Imgproc.cvtColor(this, bgr, Imgproc.COLOR_RGB2BGR) }
 fun Mat.rgba2rgb() = Mat().also { rgba -> Imgproc.cvtColor(this, rgba, Imgproc.COLOR_RGBA2RGB) }
 fun Mat.rgba2bgra() = Mat().also { rgba -> Imgproc.cvtColor(this, rgba, Imgproc.COLOR_RGBA2BGRA) }
@@ -162,4 +166,9 @@ fun Mat.compensateSensorRotation(dst: Mat, sensorRotationDegrees: Int): Mat {
     }
     Core.rotate(this, dst, rotateCode)
     return dst
+}
+
+fun Mat.saveAsJpeg(file: File, quality: Int = 100) {
+    val params = MatOfInt(Imgcodecs.IMWRITE_JPEG_QUALITY, quality)
+    Imgcodecs.imwrite(file.absolutePath, this, params)
 }
