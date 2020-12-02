@@ -1,7 +1,5 @@
 package com.tavrida.ElectroCounters.detection
 
-import android.graphics.Bitmap
-import com.tavrida.utils.Bitmap2RGBMatConverter
 import com.tavrida.utils.*
 import org.opencv.core.Mat
 
