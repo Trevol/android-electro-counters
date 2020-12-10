@@ -28,6 +28,7 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "0.0.1"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -75,4 +76,6 @@ dependencies {
 
     testImplementation 'org.robolectric:robolectric:4.4'
     testImplementation 'junit:junit:4.13.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 }
