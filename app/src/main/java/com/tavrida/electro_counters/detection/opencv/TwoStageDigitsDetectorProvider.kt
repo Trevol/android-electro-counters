@@ -12,9 +12,9 @@ class TwoStageDigitsDetectorProvider(context: Context) {
         val d = detector
     }
 
-    private object instances {
-        private lateinit var screenDetector: DarknetDetector
-        private lateinit var digitsDetector: DarknetDetector
+    object instances {
+        lateinit var screenDetector: DarknetDetector
+        lateinit var digitsDetector: DarknetDetector
 
         fun readDetector(context: Context): TwoStageDigitsDetector {
             if (!::screenDetector.isInitialized) {
