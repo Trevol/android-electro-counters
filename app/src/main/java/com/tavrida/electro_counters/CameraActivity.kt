@@ -6,8 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
-import android.os.Environment
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -22,7 +20,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
 import com.tavrida.electro_counters.drawing.DetectionDrawer
-import com.tavrida.utils.Bitmap2RGBMatConverter
+import com.tavrida.utils.Bitmap2RgbMatConverter
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.copy
@@ -46,7 +44,7 @@ class CameraActivity : AppCompatActivity() {
     private var recordingEnabled = false
 
     private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
-    private val imageConverter by lazy { Bitmap2RGBMatConverter() }
+    private val imageConverter by lazy { Bitmap2RgbMatConverter() }
     private lateinit var bitmapBuffer: Bitmap
 
     val detectionDrawer = DetectionDrawer()

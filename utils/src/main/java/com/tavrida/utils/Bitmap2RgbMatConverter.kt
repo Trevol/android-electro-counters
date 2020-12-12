@@ -5,7 +5,7 @@ import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
 
-class Bitmap2RGBMatConverter {
+class Bitmap2RgbMatConverter {
     private val rgbaMatBuffer = Mat()
     private val rgbMatBuffer = Mat()
 
