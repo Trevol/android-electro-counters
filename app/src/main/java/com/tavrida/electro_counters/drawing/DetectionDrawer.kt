@@ -1,7 +1,7 @@
 package com.tavrida.electro_counters.drawing
 
 import android.graphics.*
-import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
+import com.tavrida.counter_scanner.detection.TwoStageDigitDetectionResult
 import com.tavrida.utils.toRectF
 
 class DetectionDrawer {
@@ -37,25 +37,25 @@ class DetectionDrawer {
     fun drawDetectionResults(
         inputImage: Bitmap,
         screenImage: Bitmap,
-        detectionResult: TwoStageDetectionResult
+        detectionResult: TwoStageDigitDetectionResult
     ): DrawResult {
 
-        Canvas(inputImage).drawRect(detectionResult.screenLocation.toRectF(), screenPaint)
+        Canvas(inputImage).drawRect(detectionResult.screenBox.toRectF(), screenPaint)
 
         val digitsDetectionBitmap = Bitmap.createBitmap(
-            detectionResult.screenImage.cols(),
-            detectionResult.screenImage.rows(),
+            screenImage.width,
+            screenImage.height,
             Bitmap.Config.ARGB_8888
         ).apply { eraseColor(gray) }
 
         val screenImageCanvas = Canvas(screenImage)
         val digitsImageCanvas = Canvas(digitsDetectionBitmap)
         for (d in detectionResult.digitsDetections) {
-            val boxF = d.box.toRectF()
+            val boxF = d.boxInImage.toRectF()
             screenImageCanvas.drawRect(boxF, digitsBoxPaint)
             digitsImageCanvas.drawRect(boxF, digitsBoxPaint)
 
-            val text = d.classId.toString()
+            val text = d.digit.toString()
             //calc and set fontSize to fit in box
             textPaintFontSizeSetter.setTextSizeForHeight(boxF.height() - 4, text)
             digitsImageCanvas.drawText(

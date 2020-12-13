@@ -2,6 +2,8 @@ package com.tavrida.ElectroCounters.detection
 
 import android.content.Context
 import android.util.Log
+import com.tavrida.counter_scanner.detection.DarknetDetector
+import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
 import com.tavrida.utils.Asset
 import org.opencv.android.OpenCVLoader
 

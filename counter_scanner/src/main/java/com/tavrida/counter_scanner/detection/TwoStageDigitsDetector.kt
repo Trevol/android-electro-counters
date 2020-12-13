@@ -17,7 +17,7 @@ class TwoStageDigitsDetector(
 
         val (screenImg, screenRoi) = image.roi(screenDetection.box.toRect(), .15, .15)
         val digitsDetections = digitsDetector.detect(screenImg).detections
-            .map { DigitDetectionResult(it.classId, it.classScore, it.box.remap(screenRoi)) }
+            .map { DigitDetectionResult(it.classId, it.classScore, it.box, it.box.remap(screenRoi)) }
 
         return TwoStageDigitDetectionResult(
             null,

@@ -61,6 +61,7 @@ dependencies {
     implementation 'androidx.exifinterface:exifinterface:1.3.2'
     implementation project(path: ':sdk')
     implementation 'androidx.camera:camera-core:1.0.0-beta12'
+    implementation project(path: ':counter_scanner')
 
     // Unit testing
     testImplementation 'androidx.test.ext:junit:1.1.2'

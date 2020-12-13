@@ -15,12 +15,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.round
 
-fun ImageProxy.jpeg2RgbBgrMats() =
-    planes[0].buffer.toArray()
-        .let { Imgcodecs.imdecode(MatOfByte(*it), Imgcodecs.IMREAD_COLOR) }
-        .let { bgr -> Pair(bgr.bgr2rgb(), bgr) }
-
-
 fun Bitmap.compensateSensorRotation(sensorRotationDegrees: Int) =
     if (sensorRotationDegrees == 0) {
         this.copy()
@@ -41,4 +35,12 @@ fun Bitmap.saveAsJpeg(file: File, quality: Int = 100) = FileOutputStream(file).u
 
 fun Mat.toBitmap() = Bitmap.createBitmap(cols(), rows(), Bitmap.Config.ARGB_8888)
     .apply { Utils.matToBitmap(this@toBitmap, this) }
+
+fun Bitmap.roi(roi: Rect2d) = Bitmap.createBitmap(
+    this,
+    roi.x.toInt(),
+    roi.y.toInt(),
+    roi.width.toInt(),
+    roi.height.toInt()
+)
 

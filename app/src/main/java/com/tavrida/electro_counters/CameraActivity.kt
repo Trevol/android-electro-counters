@@ -17,15 +17,13 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
 import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
+import com.tavrida.counter_scanner.detection.TwoStageDigitDetectionResult
 import com.tavrida.electro_counters.drawing.DetectionDrawer
-import com.tavrida.utils.Bitmap2RgbMatConverter
+import com.tavrida.utils.*
 import com.tavrida.utils.camera.YuvToRgbConverter
-import com.tavrida.utils.compensateSensorRotation
-import com.tavrida.utils.copy
-import com.tavrida.utils.toBitmap
 import kotlinx.android.synthetic.main.activity_camera.*
+import org.opencv.core.Rect2d
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -159,7 +157,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun showDetectionResults(
         inputBitmap: Bitmap,
-        detectionResult: TwoStageDetectionResult?,
+        detectionResult: TwoStageDigitDetectionResult?,
         duration: Long
     ) {
         val timingTxt = "${duration}ms"
@@ -168,7 +166,7 @@ class CameraActivity : AppCompatActivity() {
         if (detectionResult == null) {
             detectionLogger.log(inputBitmap, duration)
             imageView_preview.post {
-                textView_timings.text = timingTxt + "  ${inputBitmap.width}x${inputBitmap.height}"
+                textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
                 imageView_preview.setImageBitmap(inputBitmap)
                 imageView_screen.visibility = View.GONE
                 imageView_digits.visibility = View.GONE
@@ -176,9 +174,10 @@ class CameraActivity : AppCompatActivity() {
             return
         }
 
+        val screenImage = inputBitmap.roi(detectionResult.screenBox)
         val (inputBitmapWithDrawing, screenImageWithDrawing, digitsDetectionBitmap) = detectionDrawer.drawDetectionResults(
             inputBitmap.copy(),
-            detectionResult.screenImage.toBitmap(),
+            screenImage,
             detectionResult
         )
 
@@ -201,6 +200,8 @@ class CameraActivity : AppCompatActivity() {
             imageView_digits.visibility = View.VISIBLE
         }
     }
+
+
 
 
     override fun onResume() {
