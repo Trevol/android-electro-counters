@@ -17,13 +17,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.ElectroCounters.detection.TwoStageDigitsDetectorProvider
-import com.tavrida.counter_scanner.detection.TwoStageDigitDetectionResult
+import com.tavrida.counter_scanner.CounterReadingScanner
+import com.tavrida.counter_scanner.ScanResult
+import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.DetectionDrawer
+import com.tavrida.electro_counters.drawing.ScanResultDrawer
+import com.tavrida.utils.PaintFontSizeManager
 import com.tavrida.utils.*
 import com.tavrida.utils.camera.YuvToRgbConverter
 import kotlinx.android.synthetic.main.activity_camera.*
-import org.opencv.core.Rect2d
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -45,11 +47,11 @@ class CameraActivity : AppCompatActivity() {
     private val imageConverter by lazy { Bitmap2RgbMatConverter() }
     private lateinit var bitmapBuffer: Bitmap
 
-    val detectionDrawer = DetectionDrawer()
-
-    private val detectorProvider by lazy {
-        TwoStageDigitsDetectorProvider(this)
+    private val counterScannerProvider by lazy {
+        CounterScannerProvider(this)
     }
+
+    var counterScanner: CounterReadingScanner? = null
 
     val detectionLogger by lazy {
         val logDir = File(filesDir, "detections_log")
@@ -72,12 +74,17 @@ class CameraActivity : AppCompatActivity() {
             recordingEnabled = isChecked
             detectionLogger.loggingEnabled = recordingEnabled
         }
-        detectorProvider.ensureDetector()
-        detectionLogger //trigger creation
+        counterScannerProvider // trigger lazy field creation
+        detectionLogger // trigger lazy field creation
     }
 
     fun startStopListener() {
         stopped = !stopped
+        if (stopped) {
+            counterScanner = null
+        } else {
+            counterScanner = counterScannerProvider.counterScanner()
+        }
         syncAnalysisUIState()
     }
 
@@ -140,7 +147,7 @@ class CameraActivity : AppCompatActivity() {
 
         if (started) {
             val detectorInput = imageConverter.convert(inputBitmap)
-            val result = detectorProvider.detector.detect(detectorInput)
+            val result = counterScanner!!.scan(detectorInput)
             val t1 = System.currentTimeMillis()
             showDetectionResults(inputBitmap, result, t1 - t0)
         } else {
@@ -154,50 +161,35 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-
+    val drawer = ScanResultDrawer()
     private fun showDetectionResults(
         inputBitmap: Bitmap,
-        detectionResult: TwoStageDigitDetectionResult?,
+        scanResult: ScanResult,
         duration: Long
     ) {
         val timingTxt = "${duration}ms"
         // Log.d(TAG, "Process frame in $timingTxt")
 
-        if (detectionResult == null) {
-            detectionLogger.log(inputBitmap, duration)
-            imageView_preview.post {
-                textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
-                imageView_preview.setImageBitmap(inputBitmap)
-                imageView_screen.visibility = View.GONE
-                imageView_digits.visibility = View.GONE
-            }
-            return
-        }
+        // val screenImage = inputBitmap.roi(detectionResult.screenBox)
+        // val (inputBitmapWithDrawing, screenImageWithDrawing, digitsDetectionBitmap) = detectionDrawer.drawDetectionResults(
+        //     inputBitmap.copy(),
+        //     screenImage,
+        //     scanResult
+        // )
 
-        val screenImage = inputBitmap.roi(detectionResult.screenBox)
-        val (inputBitmapWithDrawing, screenImageWithDrawing, digitsDetectionBitmap) = detectionDrawer.drawDetectionResults(
-            inputBitmap.copy(),
-            screenImage,
-            detectionResult
-        )
 
-        detectionLogger.log(
-            detectionResult,
+        /*detectionLogger.log(
+            scanResult,
             inputBitmap,
             inputBitmapWithDrawing,
             screenImageWithDrawing,
             digitsDetectionBitmap,
             duration
-        )
-
+        )*/
+        val imageWithDrawings = drawer.draw(inputBitmap.copy(), scanResult)
         imageView_preview.post {
             textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
-            imageView_preview.setImageBitmap(inputBitmapWithDrawing)
-
-            imageView_screen.setImageBitmap(screenImageWithDrawing)
-            imageView_digits.setImageBitmap(digitsDetectionBitmap)
-            imageView_screen.visibility = View.VISIBLE
-            imageView_digits.visibility = View.VISIBLE
+            imageView_preview.setImageBitmap(imageWithDrawings)
         }
     }
 

@@ -31,6 +31,6 @@ class CounterReadingScanner(val detector: TwoStageDigitsDetector) {
 
 data class ScanResult(
     val currentDetections: List<DigitDetectionResult>,
-    val digitsAtPoints: List<DigitAtBox>,
+    val digitsAtBox: List<DigitAtBox>,
     val aggregatedDetections: List<AggregatedDetections>
 )

@@ -2,10 +2,14 @@ package com.tavrida.electro_counters
 
 import android.graphics.Bitmap
 import android.graphics.RectF
-import com.tavrida.ElectroCounters.detection.ObjectDetectionResult
-import com.tavrida.ElectroCounters.detection.TwoStageDetectionResult
+import com.tavrida.counter_scanner.detection.DigitDetectionResult
+import com.tavrida.counter_scanner.detection.ObjectDetectionResult
+import com.tavrida.counter_scanner.detection.TwoStageDigitDetectionResult
+import com.tavrida.utils.roi
+
 import com.tavrida.utils.saveAsJpeg
 import org.opencv.core.Rect
+import org.opencv.core.Rect2d
 import java.io.File
 import java.io.FileOutputStream
 import java.text.SimpleDateFormat
@@ -38,7 +42,7 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
     }
 
     fun log(
-        detectionResult: TwoStageDetectionResult,
+        detectionResult: TwoStageDigitDetectionResult,
         inputBitmap: Bitmap,
         inputBitmapWithDrawing: Bitmap,
         screenImageWithDrawing: Bitmap,
@@ -52,7 +56,8 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
         val file = { suf: String -> File(logDir, "${pref}_$suf.jpg") }
 
         inputBitmap.saveAsJpeg(file("input"))
-        detectionResult.screenImage.saveAsJpeg(file("screen"))
+        val screenImage = inputBitmap.roi(detectionResult.screenBox)
+        screenImage.saveAsJpeg(file("screen"))
         inputBitmapWithDrawing.saveAsJpeg(file("inputDrawing"))
         screenImageWithDrawing.saveAsJpeg(file("screenDrawing"))
         digitsDetectionBitmap.saveAsJpeg(file("digits"))
@@ -72,13 +77,13 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
 
     private fun log(
         pref: String,
-        detectionResult: TwoStageDetectionResult?,
+        detectionResult: TwoStageDigitDetectionResult?,
         duration: Long
     ) {
         val sb = StringBuilder()
         sb.appendln("---duration").appendln(duration)
         if (detectionResult != null) {
-            sb.appendln("---screenLocation").appendln(detectionResult.screenLocation.toLogString())
+            sb.appendln("---screenLocation").appendln(detectionResult.screenBox.toLogString())
             sb.appendln("---digits")
             for (d in detectionResult.digitsDetections) {
                 sb.appendln(d.toLogString())
@@ -94,9 +99,9 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
     }
 
     private companion object {
-        fun Rect.toLogString() = "$x $y $width $height"
-        private fun ObjectDetectionResult.toLogString(): String {
-            return "${box.x} ${box.y} ${box.width} ${box.height} $classId $classScore"
+        fun Rect2d.toLogString() = "$x $y $width $height"
+        private fun DigitDetectionResult.toLogString(): String {
+            return "boxInScreen(${boxInScreen.x} ${boxInScreen.y} ${boxInScreen.width} ${boxInScreen.height}) boxInImage(${boxInImage.x} ${boxInImage.y} ${boxInImage.width} ${boxInImage.height}) $digit $score"
         }
 
         private const val TIMESTAMP_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"

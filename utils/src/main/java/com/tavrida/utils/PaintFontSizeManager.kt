@@ -1,11 +1,9 @@
-package com.tavrida.electro_counters.drawing
+package com.tavrida.utils
 
 import android.graphics.Paint
 import android.graphics.Rect
 
-class PaintFontSizeSetter(val paint: Paint) {
-    private val refSize = 50f
-    private val refText = "0"
+class PaintFontSizeManager(val paint: Paint) {
     private val refBounds = Rect()
 
     init {
@@ -28,5 +26,10 @@ class PaintFontSizeSetter(val paint: Paint) {
         // got here https://stackoverflow.com/a/21895626
         val desiredTextSize: Float = refSize * desiredHeight / refBounds.height()
         paint.textSize = desiredTextSize
+    }
+
+    private companion object {
+        private const val refSize = 50f
+        private const val refText = "0"
     }
 }

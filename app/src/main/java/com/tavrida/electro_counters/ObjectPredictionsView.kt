@@ -5,12 +5,9 @@ import android.graphics.*
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
-import com.tavrida.ElectroCounters.detection.ObjectDetectionResult
-import com.tavrida.utils.toDisplayStr
+import com.tavrida.counter_scanner.detection.ObjectDetectionResult
+import com.tavrida.counter_scanner.utils.toDisplayStr
 import com.tavrida.utils.toRectF
-import kotlinx.android.synthetic.main.activity_camera.*
-import org.opencv.core.Rect2d
-import kotlin.random.Random
 
 class ObjectPredictionsView : View {
     constructor(context: Context) : super(context)
