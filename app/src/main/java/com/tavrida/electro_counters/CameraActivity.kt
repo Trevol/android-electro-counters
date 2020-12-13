@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -192,8 +193,6 @@ class CameraActivity : AppCompatActivity() {
             imageView_preview.setImageBitmap(imageWithDrawings)
         }
     }
-
-
 
 
     override fun onResume() {

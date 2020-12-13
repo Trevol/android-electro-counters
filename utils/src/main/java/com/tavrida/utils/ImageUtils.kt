@@ -17,7 +17,8 @@ import kotlin.math.round
 
 fun Bitmap.compensateSensorRotation(sensorRotationDegrees: Int) =
     if (sensorRotationDegrees == 0) {
-        this.copy()
+        // this.copy()
+        this
     } else
         Bitmap.createBitmap(
             this, 0, 0, this.width, this.height,
