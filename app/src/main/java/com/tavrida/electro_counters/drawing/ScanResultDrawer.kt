@@ -39,7 +39,7 @@ class ScanResultDrawer {
             canvas.drawText(
                 text,
                 box.left + 2,
-                box.bottom - 2,
+                box.top - 2,
                 digitPaintManager.paint
             )
         }
