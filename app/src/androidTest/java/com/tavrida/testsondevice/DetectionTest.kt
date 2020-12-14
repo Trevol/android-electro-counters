@@ -3,10 +3,10 @@ package com.tavrida.testsondevice
 import android.content.Context
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.tavrida.electro_counters.counter_scanner.TwoStageDigitsDetectorProvider
 import com.tavrida.counter_scanner.detection.DarknetDetector
 import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
 import com.tavrida.counter_scanner.utils.bgr2rgb
+import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.utils.Asset
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -30,12 +30,12 @@ class DetectionTest {
         }
 
         fun getScreenDetector(context: Context): DarknetDetector {
-            TwoStageDigitsDetectorProvider(context).init()
-            return TwoStageDigitsDetectorProvider.instances.screenDetector
+            CounterScannerProvider.TwoStageDigitsDetectorProvider(context).init()
+            return CounterScannerProvider.TwoStageDigitsDetectorProvider.instances.screenDetector
         }
 
         fun getTwoStageDetector(context: Context): TwoStageDigitsDetector {
-            val provider = TwoStageDigitsDetectorProvider(context)
+            val provider = CounterScannerProvider.TwoStageDigitsDetectorProvider(context)
             provider.init()
             return provider.detector
         }
