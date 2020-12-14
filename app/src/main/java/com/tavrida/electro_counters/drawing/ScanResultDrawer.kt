@@ -9,18 +9,20 @@ import com.tavrida.utils.PaintFontSizeManager
 import com.tavrida.utils.toRectF
 
 class ScanResultDrawer {
-    private val digitsBoxPaint = Paint().apply {
-        color = Color.argb(255, 0, 255, 0)
-        style = Paint.Style.STROKE
-        strokeWidth = 1f
-    }
-    private val digitPaintManager = PaintFontSizeManager(
-        Paint().apply {
-            color = Color.argb(255, 255, 0, 0)
-            style = Paint.Style.FILL_AND_STROKE
+    private companion object {
+        private val digitsBoxPaint = Paint().apply {
+            color = Color.argb(255, 0, 255, 0)
+            style = Paint.Style.STROKE
             strokeWidth = 1f
-            textSize = 24f
-        })
+        }
+        private val digitPaintManager = PaintFontSizeManager(
+            Paint().apply {
+                color = Color.argb(255, 255, 0, 0)
+                style = Paint.Style.FILL_AND_STROKE
+                strokeWidth = 1f
+                textSize = 24f
+            })
+    }
 
     fun draw(
         inputBitmap: Bitmap,

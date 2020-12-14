@@ -162,7 +162,6 @@ class CameraActivity : AppCompatActivity() {
         }
     }
 
-    val drawer = ScanResultDrawer()
     private fun showDetectionResults(
         inputBitmap: Bitmap,
         scanResult: ScanResult,
@@ -187,7 +186,7 @@ class CameraActivity : AppCompatActivity() {
             digitsDetectionBitmap,
             duration
         )*/
-        val imageWithDrawings = drawer.draw(inputBitmap.copy(), scanResult)
+        val imageWithDrawings = ScanResultDrawer().draw(inputBitmap.copy(), scanResult)
         imageView_preview.post {
             textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
             imageView_preview.setImageBitmap(imageWithDrawings)
