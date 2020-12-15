@@ -21,9 +21,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.tavrida.counter_scanner.CounterReadingScanner
 import com.tavrida.counter_scanner.ScanResult
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
-import com.tavrida.electro_counters.drawing.DetectionDrawer
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
-import com.tavrida.utils.PaintFontSizeManager
 import com.tavrida.utils.*
 import com.tavrida.utils.camera.YuvToRgbConverter
 import kotlinx.android.synthetic.main.activity_camera.*
