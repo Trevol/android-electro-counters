@@ -79,6 +79,7 @@ class CameraActivity : AppCompatActivity() {
         detectionLogger // trigger lazy field creation
     }
 
+
     fun startStopListener() {
         stopped = !stopped
         if (stopped) {
@@ -86,7 +87,6 @@ class CameraActivity : AppCompatActivity() {
         } else {
             counterScanner = counterScannerProvider.counterScanner()
         }
-        syncAnalysisUIState()
     }
 
     private fun syncAnalysisUIState() {
