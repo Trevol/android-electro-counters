@@ -18,8 +18,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.counter_scanner.CounterReadingScanner
-import com.tavrida.counter_scanner.ScanResult
+import com.tavrida.counter_scanner.scanning.CounterReadingScanner
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.*
@@ -77,14 +76,30 @@ class CameraActivity : AppCompatActivity() {
         detectionLogger // trigger lazy field creation
     }
 
+    override fun onDestroy() {
+        stopScanner()
+        super.onDestroy()
+    }
+
+    override fun onPause() {
+        stopped = true
+        stopScanner()
+        super.onPause()
+    }
 
     fun startStopListener() {
         stopped = !stopped
         if (stopped) {
-            counterScanner = null
+            stopScanner()
         } else {
             counterScanner = counterScannerProvider.counterScanner()
         }
+        syncAnalysisUIState()
+    }
+
+    private fun stopScanner() {
+        // counterScanner.stop()
+        counterScanner = null
     }
 
     private fun syncAnalysisUIState() {
@@ -100,7 +115,8 @@ class CameraActivity : AppCompatActivity() {
             val cameraProvider = cameraProviderFuture.get()
 
             //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
-            val (w, h) = 1280 to 960
+            val w = 1280
+            val h = 960
             val targetRes = when (imageView_preview.display.rotation) {
                 Surface.ROTATION_90, Surface.ROTATION_270 -> Size(w, h)
                 Surface.ROTATION_0, Surface.ROTATION_180 -> Size(h, w)
@@ -162,7 +178,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun showDetectionResults(
         inputBitmap: Bitmap,
-        scanResult: ScanResult,
+        scanResult: CounterReadingScanner.ScanResult,
         duration: Long
     ) {
         val timingTxt = "${duration}ms"
@@ -202,6 +218,7 @@ class CameraActivity : AppCompatActivity() {
                 this, permissions.toTypedArray(), permissionsRequestCode
             )
         }
+        syncAnalysisUIState()
     }
 
     override fun onRequestPermissionsResult(

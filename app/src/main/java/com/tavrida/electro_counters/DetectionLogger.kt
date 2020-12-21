@@ -101,7 +101,7 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
     private companion object {
         fun Rect2d.toLogString() = "$x $y $width $height"
         private fun DigitDetectionResult.toLogString(): String {
-            return "boxInScreen(${boxInScreen.x} ${boxInScreen.y} ${boxInScreen.width} ${boxInScreen.height}) boxInImage(${boxInImage.x} ${boxInImage.y} ${boxInImage.width} ${boxInImage.height}) $digit $score"
+            return "boxInScreen(boxInImage(${boxInImage.x} ${boxInImage.y} ${boxInImage.width} ${boxInImage.height}) $digit $score"
         }
 
         private const val TIMESTAMP_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"

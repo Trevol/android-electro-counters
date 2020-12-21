@@ -50,7 +50,7 @@ class DetectionDrawer {
         ).apply { eraseColor(gray) }
 
         val screenImageCanvas = Canvas(screenImage)
-        val digitsImageCanvas = Canvas(digitsDetectionBitmap)
+        /*val digitsImageCanvas = Canvas(digitsDetectionBitmap)
         for (d in detectionResult.digitsDetections) {
             val boxF = d.boxInScreen.toRectF()
             screenImageCanvas.drawRect(boxF, digitsBoxPaint)
@@ -65,7 +65,7 @@ class DetectionDrawer {
                 boxF.bottom - 2,
                 digitPaint
             )
-        }
+        }*/
         return DrawResult(inputImage, screenImage, digitsDetectionBitmap)
     }
 }

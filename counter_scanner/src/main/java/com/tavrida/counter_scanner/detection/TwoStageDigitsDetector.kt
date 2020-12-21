@@ -12,12 +12,12 @@ class TwoStageDigitsDetector(
     fun detect(image: Mat): TwoStageDigitDetectionResult? {
         val screenDetection = screenDetector.detect(image).detections
             .filter { it.classId == screenClassId }
-            .minBy { it.box.center().L2squared(image.center()) } // choose closest to image center
+            .minByOrNull { it.box.center().L2squared(image.center()) } // choose closest to image center
             ?: return null
 
         val (screenImg, screenRoi) = image.roi(screenDetection.box.toRect(), .15, .15)
         val digitsDetections = digitsDetector.detect(screenImg).detections
-            .map { DigitDetectionResult(it.classId, it.classScore, it.box, it.box.remap(screenRoi)) }
+            .map { DigitDetectionResult(it.classId, it.classScore, it.box.remap(screenRoi)) }
 
         return TwoStageDigitDetectionResult(
             null,
