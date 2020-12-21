@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -18,7 +17,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.counter_scanner.scanning.CounterReadingScanner
 import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
@@ -146,9 +144,19 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
+
+    var prevAnalyzeImageCallMs: Long? = null
+    inline fun measureAnalyzeImageCall(): Long {
+        val currentAnalyzeImageCallMs = System.currentTimeMillis()
+        val callDuration =
+            currentAnalyzeImageCallMs - (prevAnalyzeImageCallMs ?: currentAnalyzeImageCallMs)
+        prevAnalyzeImageCallMs = currentAnalyzeImageCallMs
+        return callDuration
+    }
+
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
-        val t0 = System.currentTimeMillis()
+
 
         val rotation = image.imageInfo.rotationDegrees
         if (!::bitmapBuffer.isInitialized) {
@@ -164,8 +172,8 @@ class CameraActivity : AppCompatActivity() {
         if (started) {
             val detectorInput = imageConverter.convert(inputBitmap)
             val result = counterScanner!!.scan(detectorInput)
-            val t1 = System.currentTimeMillis()
-            showDetectionResults(inputBitmap, result, t1 - t0)
+
+            showDetectionResults(inputBitmap, result, measureAnalyzeImageCall())
         } else {
             //simply show original frame
             imageView_preview.post {
@@ -176,6 +184,20 @@ class CameraActivity : AppCompatActivity() {
             }
         }
     }
+
+    /*var prevMillis: Long? = null
+    @SuppressLint("UnsafeExperimentalUsageError")
+    fun analyzeImage__(image: ImageProxy) {
+        val currentMillis = System.currentTimeMillis()
+
+        image.close()
+
+        if (prevMillis != null) {
+            val totalMillis = currentMillis - prevMillis!!
+            //Log.d(TAG, "analyze: $totalMillis")
+        }
+        prevMillis = currentMillis
+    }*/
 
     private fun showDetectionResults(
         inputBitmap: Bitmap,
