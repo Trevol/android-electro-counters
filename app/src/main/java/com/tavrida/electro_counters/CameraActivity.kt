@@ -19,6 +19,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.counter_scanner.scanning.CounterReadingScanner
+import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.*
@@ -49,7 +50,7 @@ class CameraActivity : AppCompatActivity() {
         CounterScannerProvider(this)
     }
 
-    var counterScanner: CounterReadingScanner? = null
+    var counterScanner: NonblockingCounterReadingScanner? = null
 
     val detectionLogger by lazy {
         val logDir = File(filesDir, "detections_log")
@@ -98,7 +99,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun stopScanner() {
-        // counterScanner.stop()
+        counterScanner?.stop()
         counterScanner = null
     }
 
@@ -155,10 +156,10 @@ class CameraActivity : AppCompatActivity() {
                 image.width, image.height, Bitmap.Config.ARGB_8888
             )
         }
-        image.use {
+        val inputBitmap = image.use {
             yuvToRgbConverter.yuvToRgb(image.image!!, bitmapBuffer)
+            bitmapBuffer.compensateSensorRotation(rotation)
         }
-        val inputBitmap = bitmapBuffer.compensateSensorRotation(rotation)
 
         if (started) {
             val detectorInput = imageConverter.convert(inputBitmap)
@@ -178,7 +179,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun showDetectionResults(
         inputBitmap: Bitmap,
-        scanResult: CounterReadingScanner.ScanResult,
+        scanResult: NonblockingCounterReadingScanner.ScanResult,
         duration: Long
     ) {
         val timingTxt = "${duration}ms"

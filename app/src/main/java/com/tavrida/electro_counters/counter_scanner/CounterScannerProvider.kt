@@ -4,6 +4,7 @@ import android.content.Context
 import com.tavrida.counter_scanner.detection.DarknetDetector
 import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
 import com.tavrida.counter_scanner.scanning.CounterReadingScanner
+import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
 import com.tavrida.utils.Asset
 import org.opencv.android.OpenCVLoader
 
@@ -14,7 +15,7 @@ class CounterScannerProvider(context: Context) {
         detectorProvider.init()
     }
 
-    fun counterScanner() = CounterReadingScanner(detectorProvider.detector)
+    fun counterScanner() = NonblockingCounterReadingScanner(detectorProvider.detector)
 
     companion object {
         init {

@@ -5,6 +5,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import com.tavrida.counter_scanner.scanning.CounterReadingScanner
+import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
 import com.tavrida.utils.PaintFontSizeManager
 import com.tavrida.utils.toRectF
 
@@ -26,7 +27,7 @@ class ScanResultDrawer {
 
     fun draw(
         inputBitmap: Bitmap,
-        scanResult: CounterReadingScanner.ScanResult
+        scanResult: NonblockingCounterReadingScanner.ScanResult
     ): Bitmap {
         val canvas = Canvas(inputBitmap)
         for (d in scanResult.digitsAtBoxes) {
