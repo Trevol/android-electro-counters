@@ -105,6 +105,7 @@ class CameraActivity : AppCompatActivity() {
         val r = if (stopped) R.drawable.start_128 else R.drawable.stop_128
         buttonStartStop.setBackgroundResource(r)
         textView_timings.visibility = if (stopped) View.INVISIBLE else View.VISIBLE
+        textView_timings.text = ""
     }
 
     private fun bindCameraUseCases() = imageView_preview.post {
@@ -177,27 +178,10 @@ class CameraActivity : AppCompatActivity() {
         } else {
             //simply show original frame
             imageView_preview.post {
-                textView_timings.text = ""
                 imageView_preview.setImageBitmap(inputBitmap)
-                imageView_screen.visibility = View.GONE
-                imageView_digits.visibility = View.GONE
             }
         }
     }
-
-    /*var prevMillis: Long? = null
-    @SuppressLint("UnsafeExperimentalUsageError")
-    fun analyzeImage__(image: ImageProxy) {
-        val currentMillis = System.currentTimeMillis()
-
-        image.close()
-
-        if (prevMillis != null) {
-            val totalMillis = currentMillis - prevMillis!!
-            //Log.d(TAG, "analyze: $totalMillis")
-        }
-        prevMillis = currentMillis
-    }*/
 
     private fun showDetectionResults(
         inputBitmap: Bitmap,
