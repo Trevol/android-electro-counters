@@ -44,7 +44,16 @@ class CameraActivity : AppCompatActivity() {
 
     private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
     private val imageConverter = Bitmap2RgbMatConverter()
-    private lateinit var bitmapBuffer: Bitmap
+    private var __bitmapBuffer: Bitmap? = null
+
+    private fun getBitmapBuffer(width: Int, height: Int): Bitmap {
+        if (__bitmapBuffer == null) {
+            __bitmapBuffer = Bitmap.createBitmap(
+                width, height, Bitmap.Config.ARGB_8888
+            )
+        }
+        return __bitmapBuffer!!
+    }
 
     private val counterScannerProvider by lazy { CounterScannerProvider(this) }
 
@@ -59,15 +68,6 @@ class CameraActivity : AppCompatActivity() {
         yuvToRgbConverter
         counterScannerProvider
         detectionLogger
-    }
-
-    private fun getBitmapBuffer(width: Int, height: Int): Bitmap {
-        if (!::bitmapBuffer.isInitialized) {
-            bitmapBuffer = Bitmap.createBitmap(
-                width, height, Bitmap.Config.ARGB_8888
-            )
-        }
-        return bitmapBuffer
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -171,14 +171,14 @@ class CameraActivity : AppCompatActivity() {
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
         val inputBitmap = image.use {
-            val bmpBuffer = getBitmapBuffer(image.width, image.height)
-            yuvToRgbConverter.yuvToRgb(image.image!!, bmpBuffer)
-            bitmapBuffer.compensateSensorRotation(image.imageInfo.rotationDegrees)
+            getBitmapBuffer(image.width, image.height)
+                .apply { yuvToRgbConverter.yuvToRgb(image.image!!, this) }
+                .compensateSensorRotation(image.imageInfo.rotationDegrees)
         }
 
         if (started) {
             val detectorInput = imageConverter.convert(inputBitmap)
-                .copy() //!!!COPY - because detectorInput queued to detectorJob!!!
+                .copy() // !!!make COPY - because detectorInput queued to detectorJob!!!
             val result = counterScanner!!.scan(detectorInput)
 
             showDetectionResults(inputBitmap, result, measureAnalyzeImageCall())
