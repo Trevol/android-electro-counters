@@ -178,7 +178,7 @@ class CameraActivity : AppCompatActivity() {
 
         if (started) {
             val detectorInput = imageConverter.convert(inputBitmap)
-                .copy()
+                .copy() //!!!COPY - because detectorInput queued to detectorJob!!!
             val result = counterScanner!!.scan(detectorInput)
 
             showDetectionResults(inputBitmap, result, measureAnalyzeImageCall())
