@@ -44,7 +44,7 @@ class CounterScannerProvider(context: Context) {
             private const val screenModelCfg = "yolov3-tiny-2cls-320.cfg"
             private const val screenModelWeights = "yolov3-tiny-2cls-counter-screeen-320.3.weights"
             private const val digitsModelCfg = "yolov3-tiny-10cls-320.cfg"
-            private const val digitsModelWeights = "yolov3-tiny-10cls-320.4.weights"
+            private const val digitsModelWeights = "yolov3-tiny-10cls-digits-320.6.weights"
 
             private fun createDarknetDetector(
                 context: Context,
