@@ -18,11 +18,13 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
+import com.tavrida.counter_scanner.utils.copy
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.*
 import com.tavrida.utils.camera.YuvToRgbConverter
 import kotlinx.android.synthetic.main.activity_camera.*
+import org.opencv.android.OpenCVLoader
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -41,18 +43,31 @@ class CameraActivity : AppCompatActivity() {
     private var recordingEnabled = false
 
     private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
-    private val imageConverter by lazy { Bitmap2RgbMatConverter() }
+    private val imageConverter = Bitmap2RgbMatConverter()
     private lateinit var bitmapBuffer: Bitmap
 
-    private val counterScannerProvider by lazy {
-        CounterScannerProvider(this)
-    }
+    private val counterScannerProvider by lazy { CounterScannerProvider(this) }
 
     var counterScanner: NonblockingCounterReadingScanner? = null
 
     val detectionLogger by lazy {
-        val logDir = File(filesDir, "detections_log")
-        DetectionLogger(recordingEnabled, logDir)
+        DetectionLogger(recordingEnabled, logDir = File(filesDir, "detections_log"))
+    }
+
+    private fun initLazyVars() {
+        //init lazies
+        yuvToRgbConverter
+        counterScannerProvider
+        detectionLogger
+    }
+
+    private fun getBitmapBuffer(width: Int, height: Int): Bitmap {
+        if (!::bitmapBuffer.isInitialized) {
+            bitmapBuffer = Bitmap.createBitmap(
+                width, height, Bitmap.Config.ARGB_8888
+            )
+        }
+        return bitmapBuffer
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,8 +86,7 @@ class CameraActivity : AppCompatActivity() {
             recordingEnabled = isChecked
             detectionLogger.loggingEnabled = recordingEnabled
         }
-        counterScannerProvider // trigger lazy field creation
-        detectionLogger // trigger lazy field creation
+        initLazyVars()
     }
 
     override fun onDestroy() {
@@ -145,7 +159,6 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-
     var prevAnalyzeImageCallMs: Long? = null
     inline fun measureAnalyzeImageCall(): Long {
         val currentAnalyzeImageCallMs = System.currentTimeMillis()
@@ -157,21 +170,15 @@ class CameraActivity : AppCompatActivity() {
 
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
-
-
-        val rotation = image.imageInfo.rotationDegrees
-        if (!::bitmapBuffer.isInitialized) {
-            bitmapBuffer = Bitmap.createBitmap(
-                image.width, image.height, Bitmap.Config.ARGB_8888
-            )
-        }
         val inputBitmap = image.use {
-            yuvToRgbConverter.yuvToRgb(image.image!!, bitmapBuffer)
-            bitmapBuffer.compensateSensorRotation(rotation)
+            val bmpBuffer = getBitmapBuffer(image.width, image.height)
+            yuvToRgbConverter.yuvToRgb(image.image!!, bmpBuffer)
+            bitmapBuffer.compensateSensorRotation(image.imageInfo.rotationDegrees)
         }
 
         if (started) {
             val detectorInput = imageConverter.convert(inputBitmap)
+                .copy()
             val result = counterScanner!!.scan(detectorInput)
 
             showDetectionResults(inputBitmap, result, measureAnalyzeImageCall())
@@ -247,6 +254,10 @@ class CameraActivity : AppCompatActivity() {
     }
 
     companion object {
+        init {
+            OpenCVLoader.initDebug()
+        }
+
         private val TAG = CameraActivity::class.java.simpleName
 
         inline fun View.afterMeasured(crossinline block: () -> Unit) {

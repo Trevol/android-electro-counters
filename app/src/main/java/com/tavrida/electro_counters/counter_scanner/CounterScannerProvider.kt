@@ -3,10 +3,11 @@ package com.tavrida.electro_counters.counter_scanner
 import android.content.Context
 import com.tavrida.counter_scanner.detection.DarknetDetector
 import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
-import com.tavrida.counter_scanner.scanning.CounterReadingScanner
 import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
 import com.tavrida.utils.Asset
 import org.opencv.android.OpenCVLoader
+import org.opencv.core.CvType
+import org.opencv.core.Mat
 
 class CounterScannerProvider(context: Context) {
     private val detectorProvider = TwoStageDigitsDetectorProvider(context)
@@ -17,14 +18,8 @@ class CounterScannerProvider(context: Context) {
 
     fun counterScanner() = NonblockingCounterReadingScanner(detectorProvider.detector)
 
-    companion object {
-        init {
-            OpenCVLoader.initDebug()
-        }
-    }
-
     class TwoStageDigitsDetectorProvider(context: Context) {
-        val detector by lazy { instances.readDetector(context) }
+        val detector by lazy { instances.readDetector(context, warmup = true) }
 
         fun init() {
             val d = detector
@@ -34,12 +29,12 @@ class CounterScannerProvider(context: Context) {
             lateinit var screenDetector: DarknetDetector
             lateinit var digitsDetector: DarknetDetector
 
-            fun readDetector(context: Context): TwoStageDigitsDetector {
+            fun readDetector(context: Context, warmup: Boolean): TwoStageDigitsDetector {
                 if (!instances::screenDetector.isInitialized) {
                     screenDetector =
-                        createDarknetDetector(context, screenModelCfg, screenModelWeights)
+                        createDarknetDetector(context, screenModelCfg, screenModelWeights, warmup)
                     digitsDetector =
-                        createDarknetDetector(context, digitsModelCfg, digitsModelWeights)
+                        createDarknetDetector(context, digitsModelCfg, digitsModelWeights, warmup)
                 }
                 return TwoStageDigitsDetector(screenDetector, digitsDetector)
             }
@@ -54,11 +49,16 @@ class CounterScannerProvider(context: Context) {
             private fun createDarknetDetector(
                 context: Context,
                 modelCfg: String,
-                modelWeights: String
+                modelWeights: String,
+                warmup: Boolean
             ): DarknetDetector {
                 val screenCfgFile = Asset.getFilePath(context, modelCfg, true)
                 val screenModel = Asset.getFilePath(context, modelWeights, true)
-                return DarknetDetector(screenCfgFile, screenModel, 320)
+                val darknetDetector = DarknetDetector(screenCfgFile, screenModel, 320)
+                if (warmup) {
+                    darknetDetector.detect(Mat(320, 320, CvType.CV_8UC3))
+                }
+                return darknetDetector
             }
         }
     }
