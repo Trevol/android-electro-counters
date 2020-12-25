@@ -4,13 +4,12 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import com.tavrida.counter_scanner.scanning.CounterReadingScanner
 import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
 import com.tavrida.utils.PaintFontSizeManager
 import com.tavrida.utils.toRectF
 
 class ScanResultDrawer {
-    private companion object {
+    companion object {
         private val digitsBoxPaint = Paint().apply {
             color = Color.argb(255, 0, 255, 0)
             style = Paint.Style.STROKE
@@ -35,14 +34,8 @@ class ScanResultDrawer {
             canvas.drawRect(box, digitsBoxPaint)
 
             val text = d.digit.toString()
-            //calc and set fontSize to fit in box
             digitPaintManager.setTextSizeForHeight(box.height() - 4, text)
-            canvas.drawText(
-                text,
-                box.left + 2,
-                box.top - 2,
-                digitPaintManager.paint
-            )
+            canvas.drawText(text, box.left + 2, box.top - 2, digitPaintManager.paint)
         }
         return inputBitmap
     }

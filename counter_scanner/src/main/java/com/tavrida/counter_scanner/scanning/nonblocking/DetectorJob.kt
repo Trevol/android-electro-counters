@@ -19,7 +19,6 @@ internal class DetectorJob(
     private val jobThread = startJobThread()
 
     private fun detectorRoutine() {
-        //NOTE: detectorJob is main source of aggregatedDetections/digitsAtBoxes
         var aggrDetectionsForFrame = listOf<AggregatedDetections>()
         var itemForDetection = input.takeLast()
         while (isRunning()) {

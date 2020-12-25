@@ -16,7 +16,7 @@ class CounterScannerProvider(context: Context) {
         detectorProvider.init()
     }
 
-    fun counterScanner() = NonblockingCounterReadingScanner(detectorProvider.detector)
+    fun counterScanner() = NonblockingCounterReadingScanner(detectorProvider.detector, 500)
 
     class TwoStageDigitsDetectorProvider(context: Context) {
         val detector by lazy { instances.readDetector(context, warmup = true) }
