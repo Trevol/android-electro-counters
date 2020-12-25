@@ -214,10 +214,21 @@ class CameraActivity : AppCompatActivity() {
             digitsDetectionBitmap,
             duration
         )*/
+        val readings = scanResult.readingInfo?.reading
         val imageWithDrawings = ScanResultDrawer().draw(inputBitmap.copy(), scanResult)
         imageView_preview.post {
             textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
             imageView_preview.setImageBitmap(imageWithDrawings)
+
+            if (readings != null && readings.isNotEmpty()) {
+                textView_readings.visibility = View.VISIBLE
+                textView_readings.text = readings
+                /*println("readings: $readings\n")
+                println(scanResult.digitsAtBoxes)
+                println("--------------------------------")*/
+            } else {
+                textView_readings.visibility = View.INVISIBLE
+            }
         }
     }
 

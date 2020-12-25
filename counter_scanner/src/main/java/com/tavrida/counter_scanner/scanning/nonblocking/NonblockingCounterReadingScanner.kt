@@ -9,7 +9,9 @@ import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
 import org.opencv.core.Mat
 import org.opencv.core.Rect2d
 import java.io.Closeable
+import java.util.*
 import kotlin.IllegalStateException
+import kotlin.collections.ArrayList
 
 class NonblockingCounterReadingScanner(
     detector: TwoStageDigitsDetector,
@@ -108,33 +110,37 @@ class NonblockingCounterReadingScanner(
         private fun List<DigitAtBox>.removeVerticalDigits(): List<DigitAtBox> {
             if (size <= 1)
                 return this
-            //todo: неотсортированный список (this) приводит к непредсказуемому результату
-            val result = mutableListOf<DigitAtBox>()
-            for (i in 0 until size - 1) {
-                val thisBoxedDigit = get(i)
-                val restOfBoxedDigits = (i + 1 until size).map { get(it) }
-                val verticalBoxedDigit = thisBoxedDigit.getVertical(restOfBoxedDigits)
-                if (verticalBoxedDigit == null) {
-                    result.add(thisBoxedDigit)
+            val resultItems = ArrayList<DigitAtBox>(size)
+            val srcItems = LinkedList(this)
+
+            while (srcItems.isNotEmpty()) {
+                val thisItem = srcItems.first()
+                val restOfItems = srcItems.subList(1, srcItems.size)
+                val verticalItem = thisItem.getVertical(restOfItems)
+                if (verticalItem == null) {
+                    resultItems.add(thisItem)
                 } else {
-                    result.add(lower(thisBoxedDigit, verticalBoxedDigit))
+                    resultItems.add(chooseVerticallyLower(thisItem, verticalItem))
+                    srcItems.remove(verticalItem)
                 }
+                srcItems.remove(thisItem)
             }
-            return result
+
+            return resultItems
         }
 
-        private fun lower(d1: DigitAtBox, d2: DigitAtBox) =
-            if (d1.box.y > d2.box.y)
-                d1
-            else
-                d2
+        private fun chooseVerticallyLower(d1: DigitAtBox, d2: DigitAtBox) =
+            if (d1.box.y > d2.box.y) d1 else d2
 
         private fun DigitAtBox.getVertical(others: Iterable<DigitAtBox>): DigitAtBox? {
             return others.firstOrNull { it.box.isVerticalTo(this.box) }
         }
 
         private fun Rect2d.isVerticalTo(other: Rect2d): Boolean {
-            return this.x.between(other.x, other.br().x) || this.br().x.between(other.x, other.br().x)
+            return this.x.between(other.x, other.br().x) || this.br().x.between(
+                other.x,
+                other.br().x
+            )
         }
 
         private inline fun Double.between(v1: Double, v2: Double) = this in v1..v2
