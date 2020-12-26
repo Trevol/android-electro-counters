@@ -1,8 +1,14 @@
-++ start/stop (analysis) button
-  ++ also tap to screen to start/stop
+- QR code scanning
+   - google "zbar android"
+   - https://www.pyimagesearch.com/2018/05/21/an-opencv-barcode-and-qr-code-scanner-with-zbar/
+   - https://stackoverflow.com/questions/60359398/python-detect-a-qr-code-from-an-image-and-crop-using-opencv
+   - https://www.learnopencv.com/opencv-qr-code-scanner-c-and-python/
+   - https://stackoverflow.com/questions/55012994/reading-a-barcode-using-opencv-qrcodedetector
 
-++ draw digits with correct font size (fit into box)
-++ не рисуется рамка вокруг обнаруженного экрана счетчика в альбомной ориентации
+- tflite
+   - https://habr.com/en/users/alexeyab/comments/
+
+
 
 - turn on/off frame saving
 - align consecutive frames to compensate camera motion
@@ -19,7 +25,8 @@
    - https://medium.com/tensorflow/training-and-serving-a-realtime-mobile-object-detector-in-30-minutes-with-cloud-tpus-b78971cf1193
    - EfficientDet SSDLite
          - https://medium.com/@namvu1291/deploy-your-own-ssdlite-mobiledet-object-detector-on-google-corals-edgetpu-using-tensorflow-s-f41f1e3360c8
-   -
+   - http://jevois.org/qa/index.php?qa=2305&qa_1=alexyab-xnor-version-yolov3-link-attached-looking-video-mode
+   - google "XNOR-YOLO"
 
 
 ########### how to debug with tcpip
