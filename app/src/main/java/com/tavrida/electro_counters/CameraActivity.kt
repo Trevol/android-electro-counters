@@ -145,7 +145,7 @@ class CameraActivity : AppCompatActivity() {
 
             imageAnalysis.setAnalyzer(
                 executor,
-                ImageAnalysis.Analyzer { analyzeImage(it) })
+                { analyzeImage(it) })
 
             val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
 
