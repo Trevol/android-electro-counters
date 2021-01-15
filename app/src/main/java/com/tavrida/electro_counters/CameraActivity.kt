@@ -89,7 +89,7 @@ class CameraActivity : AppCompatActivity() {
 
             imageAnalysis.setAnalyzer(
                 executor,
-                ImageAnalysis.Analyzer { analyzeImage(it) })
+                { analyzeImage(it) })
 
             val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
 
@@ -105,8 +105,6 @@ class CameraActivity : AppCompatActivity() {
 
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
-        val t0 = System.currentTimeMillis()
-
         val rotation = image.imageInfo.rotationDegrees
         if (!::bitmapBuffer.isInitialized) {
             bitmapBuffer = Bitmap.createBitmap(
