@@ -20,6 +20,7 @@
 - implement 90/180/270 degree rotation using vertical/horizontal flip (may be faster then using arbitrary rotation matrix)
     https://acomputerengineer.com/2016/06/07/flip-imagebitmap-horizontally-and-vertically-in-android/
     https://stackoverflow.com/questions/36493977/flip-a-bitmap-image-horizontally-or-vertically
+- direct convertion
 - try implement
    - https://towardsdatascience.com/real-time-mobile-video-object-detection-using-tensorflow-a75fa0c5859d
    - https://medium.com/tensorflow/training-and-serving-a-realtime-mobile-object-detector-in-30-minutes-with-cloud-tpus-b78971cf1193
