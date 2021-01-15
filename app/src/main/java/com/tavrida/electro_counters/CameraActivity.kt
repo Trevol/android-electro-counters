@@ -38,12 +38,14 @@ class CameraActivity : AppCompatActivity() {
 
     private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
     private var __bitmapBuffer: Bitmap? = null
+    private var __bitmapBufferCanvas: Canvas? = null
 
     private fun getBitmapBuffer(width: Int, height: Int): Bitmap {
         if (__bitmapBuffer == null) {
             __bitmapBuffer = Bitmap.createBitmap(
                 width, height, Bitmap.Config.ARGB_8888
             )
+            __bitmapBufferCanvas = Canvas(__bitmapBuffer!!)
         }
         return __bitmapBuffer!!
     }
@@ -83,7 +85,8 @@ class CameraActivity : AppCompatActivity() {
             val cameraProvider = cameraProviderFuture.get()
 
             //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
-            val (w, h) = 1280 to 960
+            // val (w, h) = 1280 to 960
+            val (w, h) = 1024 to 768
             val targetRes = when (imageView_preview.display.rotation) {
                 Surface.ROTATION_90, Surface.ROTATION_270 -> Size(w, h)
                 Surface.ROTATION_0, Surface.ROTATION_180 -> Size(h, w)
@@ -119,7 +122,7 @@ class CameraActivity : AppCompatActivity() {
                 .apply { yuvToRgbConverter.yuvToRgb(image.image!!, this) }
                 .compensateSensorRotation(image.imageInfo.rotationDegrees)
         }
-
+        drawRoi(320, 128)
         imageView_preview.post {
             if (started) {
                 framesStorage.addFrame(inputBitmap)
@@ -129,6 +132,25 @@ class CameraActivity : AppCompatActivity() {
 
     }
 
+    val p = Paint().apply {
+        this.color = Color.rgb(0, 255, 0)
+        this.strokeWidth = 3f
+    }
+
+    private fun drawRoi(w: Int, h: Int) {
+        val centerX = __bitmapBuffer!!.width / 2.0f
+        val centerY = __bitmapBuffer!!.height / 2.0f
+
+        val halfW = w / 2f
+        val halfH = h / 2f
+        __bitmapBufferCanvas!!.drawRect(
+            centerX - halfW,
+            centerY - halfH,
+            centerX + halfW,
+            centerY + halfH,
+            p
+        )
+    }
 
     override fun onResume() {
         super.onResume()
