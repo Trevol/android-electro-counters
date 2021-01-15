@@ -37,7 +37,16 @@ class CameraActivity : AppCompatActivity() {
     private val started get() = !stopped
 
     private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
-    private lateinit var bitmapBuffer: Bitmap
+    private var __bitmapBuffer: Bitmap? = null
+
+    private fun getBitmapBuffer(width: Int, height: Int): Bitmap {
+        if (__bitmapBuffer == null) {
+            __bitmapBuffer = Bitmap.createBitmap(
+                width, height, Bitmap.Config.ARGB_8888
+            )
+        }
+        return __bitmapBuffer!!
+    }
 
     val framesStorage by lazy { FramesStorage(File(filesDir, "frames")) }
 
@@ -105,16 +114,11 @@ class CameraActivity : AppCompatActivity() {
 
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
-        val rotation = image.imageInfo.rotationDegrees
-        if (!::bitmapBuffer.isInitialized) {
-            bitmapBuffer = Bitmap.createBitmap(
-                image.width, image.height, Bitmap.Config.ARGB_8888
-            )
+        val inputBitmap = image.use {
+            getBitmapBuffer(image.width, image.height)
+                .apply { yuvToRgbConverter.yuvToRgb(image.image!!, this) }
+                .compensateSensorRotation(image.imageInfo.rotationDegrees)
         }
-        image.use {
-            yuvToRgbConverter.yuvToRgb(image.image!!, bitmapBuffer)
-        }
-        val inputBitmap = bitmapBuffer.compensateSensorRotation(rotation)
 
         imageView_preview.post {
             if (started) {
