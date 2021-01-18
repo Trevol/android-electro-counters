@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -17,11 +18,16 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
+import com.tavrida.utils.Asset
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.copy
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.io.File
+import java.io.FileInputStream
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -51,19 +57,22 @@ class CameraActivity : AppCompatActivity() {
 
     val framesStorage by lazy { FramesStorage(File(filesDir, "frames")) }
 
+    val detector by lazy { detector(this) }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
         syncAnalysisUIState()
 
-        imageView_preview.setOnClickListener {
+        /*imageView_preview.setOnClickListener {
             startStopListener()
         }
         buttonStartStop.setOnClickListener {
             startStopListener()
-        }
+        }*/
 
         framesStorage //trigger creation
+        detector
     }
 
     fun startStopListener() {
@@ -73,8 +82,8 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun syncAnalysisUIState() {
-        val r = if (stopped) R.drawable.start_128 else R.drawable.stop_128
-        buttonStartStop.setBackgroundResource(r)
+        /*val r = if (stopped) R.drawable.start_128 else R.drawable.stop_128
+        buttonStartStop.setBackgroundResource(r)*/
     }
 
     private fun bindCameraUseCases() = imageView_preview.post {
@@ -116,32 +125,44 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    private object roiDrawer {
+
+    private object roi {
         val w: Int = 400
         val h: Int = 180
 
-        private val roiPaint = Paint().apply {
+        val roiPaint = Paint().apply {
             this.color = Color.rgb(0, 255, 0)
             style = Paint.Style.STROKE
             this.strokeWidth = 3f
         }
 
-        fun draw(img: Bitmap): Bitmap {
-            val centerX = img.width / 2.0f
-            val centerY = img.height / 2.0f
+        fun roiBitmap(src: Bitmap): Pair<Bitmap, Rect> {
+            val r = rect(src)
+            return Bitmap.createBitmap(src, r.left, r.top, r.width(), r.height()) to r
+        }
+
+        inline fun rect(src: Bitmap): Rect {
+            val centerX = src.width / 2.0f
+            val centerY = src.height / 2.0f
 
             val halfW = w / 2f
             val halfH = h / 2f
-            Canvas(img).drawRect(
-                centerX - halfW,
-                centerY - halfH,
-                centerX + halfW,
-                centerY + halfH,
-                roiPaint
+            return Rect(
+                (centerX - halfW).toInt(),
+                (centerY - halfH).toInt(),
+                (centerX + halfW).toInt(),
+                (centerY + halfH).toInt()
             )
+        }
+
+        fun draw(img: Bitmap): Bitmap {
+            val r = rect(img)
+            Canvas(img).drawRect(r, roiPaint)
             return img
         }
     }
+
+    var prev = System.currentTimeMillis()
 
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
@@ -150,8 +171,26 @@ class CameraActivity : AppCompatActivity() {
                 .apply { yuvToRgbConverter.yuvToRgb(image.image!!, this) }
                 .compensateSensorRotation(image.imageInfo.rotationDegrees)
         }
-        val imageWithRoi = roiDrawer.draw(inputBitmap.copy())
+        val current = System.currentTimeMillis()
+        (current - prev).log2()
+        prev = current
+
+        val (roiImage, roiRect) = roi.roiBitmap(inputBitmap)
+        val detections = detector.detect(roiImage, .2f)
+
         imageView_preview.post {
+            val imageWithRoi = roi.draw(inputBitmap.copy())
+            val canvas = Canvas(imageWithRoi)
+            for (d in detections) {
+                val remappedRect = RectF(
+                    d.location.left + roiRect.left,
+                    d.location.top + roiRect.top,
+                    d.location.right + roiRect.left,
+                    d.location.bottom + roiRect.top
+                )
+                canvas.drawRect(remappedRect, roi.roiPaint)
+            }
+
             if (started) {
                 framesStorage.addFrame(imageWithRoi)
             }
@@ -193,7 +232,7 @@ class CameraActivity : AppCompatActivity() {
 
     companion object {
         private var imageId = 0
-        private val TAG = CameraActivity::class.java.simpleName
+        private val TAG = CameraActivity::class.java.simpleName + "_TAG"
 
         inline fun View.afterMeasured(crossinline block: () -> Unit) {
             viewTreeObserver.addOnGlobalLayoutListener(object :
@@ -205,6 +244,20 @@ class CameraActivity : AppCompatActivity() {
                     }
                 }
             })
+        }
+
+        const val MODEL_FILE = "screen_digits_320_128.tflite"
+
+        private fun detector(context: Context) =
+            mapAssetFile(context, MODEL_FILE)
+                .let { TfliteDetector(it, 128, 320) }
+
+        private fun mapAssetFile(context: Context, fileName: String): ByteBuffer {
+            val assetFd = context.assets.openFd(fileName)
+            val start = assetFd.startOffset
+            val length = assetFd.declaredLength
+            return FileInputStream(assetFd.fileDescriptor).channel
+                .map(FileChannel.MapMode.READ_ONLY, start, length)
         }
 
         fun setupAutoFocus(viewFinder: View, camera: Camera) {
@@ -225,6 +278,12 @@ class CameraActivity : AppCompatActivity() {
             camera.cameraControl.startFocusAndMetering(focusMeteringAction)
         }
 
+
+        // const val TAG = "ExampleInstrumentedTest_TAG"
+        fun log(msg: String) = Log.d(TAG, msg)
+        fun log(msg: Any) = log(msg.toString())
+        fun String.log2() = log(this)
+        fun Any.log2() = log(this)
 
     }
 }
