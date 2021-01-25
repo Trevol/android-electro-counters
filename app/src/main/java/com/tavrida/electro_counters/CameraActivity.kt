@@ -19,7 +19,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
-import com.tavrida.utils.Asset
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.copy
@@ -131,9 +130,9 @@ class CameraActivity : AppCompatActivity() {
         val h: Int = 180
 
         val roiPaint = Paint().apply {
-            this.color = Color.rgb(0, 255, 0)
+            color = Color.rgb(0, 255, 0)
             style = Paint.Style.STROKE
-            this.strokeWidth = 3f
+            strokeWidth = 3f
         }
 
         fun roiBitmap(src: Bitmap): Pair<Bitmap, Rect> {
@@ -180,16 +179,7 @@ class CameraActivity : AppCompatActivity() {
 
         imageView_preview.post {
             val imageWithRoi = roi.draw(inputBitmap.copy())
-            val canvas = Canvas(imageWithRoi)
-            for (d in detections) {
-                val remappedRect = RectF(
-                    d.location.left + roiRect.left,
-                    d.location.top + roiRect.top,
-                    d.location.right + roiRect.left,
-                    d.location.bottom + roiRect.top
-                )
-                canvas.drawRect(remappedRect, roi.roiPaint)
-            }
+            vizUtils.drawDetections(imageWithRoi, detections, roiRect)
 
             if (started) {
                 framesStorage.addFrame(imageWithRoi)
@@ -199,6 +189,42 @@ class CameraActivity : AppCompatActivity() {
 
     }
 
+    private object vizUtils {
+        private val screenPaint = Paint(Color.rgb(0, 0, 255), strokeWidth = 2f)
+        private val digitPaint = Paint(Color.rgb(253, 212, 81), strokeWidth = 2f)
+
+        private inline fun paint(classId: Int) = if (classId == 11) screenPaint else digitPaint
+
+        private fun Paint(
+            color: Int,
+            style: Paint.Style = Paint.Style.STROKE,
+            strokeWidth: Float = 1f
+        ) = Paint().apply {
+            this.color = color
+            this.style = style
+            this.strokeWidth = strokeWidth
+        }
+
+        private fun remap(src: RectF, x: Int, y: Int) = RectF(
+            src.left + x,
+            src.top + y,
+            src.right + x,
+            src.bottom + y
+        )
+
+
+        fun drawDetections(
+            srcBmp: Bitmap,
+            detections: List<TfliteDetector.ObjectDetection>,
+            roiRect: Rect
+        ) {
+            val canvas = Canvas(srcBmp)
+            for (d in detections) {
+                val remappedRect = remap(d.location, roiRect.left, roiRect.top)
+                canvas.drawRect(remappedRect, paint(d.classId))
+            }
+        }
+    }
 
     override fun onResume() {
         super.onResume()
