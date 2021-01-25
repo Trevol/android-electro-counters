@@ -190,19 +190,30 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private object vizUtils {
+        const val screenId = 11
         private val screenPaint = Paint(Color.rgb(0, 0, 255), strokeWidth = 2f)
-        private val digitPaint = Paint(Color.rgb(253, 212, 81), strokeWidth = 2f)
+        private val digitBoxPaint = Paint(Color.rgb(253, 212, 81), strokeWidth = 2f)
+        private val digitPaint =
+            Paint(
+                Color.rgb(253, 212, 81), style = Paint.Style.FILL_AND_STROKE,
+                strokeWidth = 1f, textSize = 20f
+            )
 
-        private inline fun paint(classId: Int) = if (classId == 11) screenPaint else digitPaint
+        private inline fun paint(classId: Int) =
+            if (classId == screenId) screenPaint else digitBoxPaint
+
+        private inline fun TfliteDetector.ObjectDetection.isDigit() = classId != screenId
 
         private fun Paint(
             color: Int,
             style: Paint.Style = Paint.Style.STROKE,
-            strokeWidth: Float = 1f
+            strokeWidth: Float = 1f,
+            textSize: Float = 15f
         ) = Paint().apply {
             this.color = color
             this.style = style
             this.strokeWidth = strokeWidth
+            this.textSize = textSize
         }
 
         private fun remap(src: RectF, x: Int, y: Int) = RectF(
@@ -211,7 +222,6 @@ class CameraActivity : AppCompatActivity() {
             src.right + x,
             src.bottom + y
         )
-
 
         fun drawDetections(
             srcBmp: Bitmap,
@@ -222,6 +232,14 @@ class CameraActivity : AppCompatActivity() {
             for (d in detections) {
                 val remappedRect = remap(d.location, roiRect.left, roiRect.top)
                 canvas.drawRect(remappedRect, paint(d.classId))
+                if (d.isDigit()) {
+                    canvas.drawText(
+                        (d.classId - 1).toString(),
+                        remappedRect.left + 2,
+                        remappedRect.top - 2,
+                        digitPaint
+                    )
+                }
             }
         }
     }
