@@ -55,6 +55,7 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.2.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     implementation project(path: ':counter_scanner')
+    implementation project(path: ':opencv_sdk')
 
     // CameraX
     def camerax_version = "1.0.0-beta05"
