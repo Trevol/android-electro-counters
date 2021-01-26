@@ -290,7 +290,7 @@ class CameraActivity : AppCompatActivity() {
             })
         }
 
-        const val MODEL_FILE = "screen_digits_320_128.tflite"
+        const val MODEL_FILE = "screen_digits_320x128_251.tflite"
 
         private fun detector(context: Context) =
             mapAssetFile(context, MODEL_FILE)
