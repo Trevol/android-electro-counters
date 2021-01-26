@@ -1,4 +1,3 @@
 include ':counter_scanner'
-include ':sdk'
 include 'app'
 include 'utils'
