@@ -22,7 +22,7 @@ import com.tavrida.counter_scanner.utils.copy
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.*
-import com.tavrida.utils.camera.YuvToRgbConverter
+import com.tavrida.utils.camera.YuvToRgbConverter2
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.opencv.android.OpenCVLoader
 import java.io.File
@@ -42,7 +42,7 @@ class CameraActivity : AppCompatActivity() {
     private val started get() = !stopped
     private var recordingEnabled = false
 
-    private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
+    private val yuvToRgbConverter by lazy { YuvToRgbConverter2(this) }
     private val imageConverter = Bitmap2RgbMatConverter()
     private var __bitmapBuffer: Bitmap? = null
 
@@ -172,7 +172,7 @@ class CameraActivity : AppCompatActivity() {
     fun analyzeImage(image: ImageProxy) {
         val inputBitmap = image.use {
             getBitmapBuffer(image.width, image.height)
-                .apply { yuvToRgbConverter.yuvToRgb(image.image!!, this) }
+                .apply { yuvToRgbConverter.yuvToRgb(image, this) }
                 .compensateSensorRotation(image.imageInfo.rotationDegrees)
         }
 
