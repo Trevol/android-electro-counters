@@ -157,7 +157,6 @@ class CameraActivity : AppCompatActivity() {
         return callDuration
     }
 
-    @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
         val (readyForProcessing, readyForDisplay) = image.use {
             cameraImageConverter.convert(it)
