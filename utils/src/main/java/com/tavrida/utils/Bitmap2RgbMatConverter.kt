@@ -10,7 +10,7 @@ class Bitmap2RgbMatConverter {
     private val rgbMatBuffer = Mat()
 
     fun convert(image: Bitmap): Mat {
-        Utils.bitmapToMat(image, rgbaMatBuffer)
+        Utils.bitmapToMat(image, rgbaMatBuffer, true)
         Imgproc.cvtColor(rgbaMatBuffer, rgbMatBuffer, Imgproc.COLOR_RGBA2RGB)
         return rgbMatBuffer
     }

@@ -22,7 +22,6 @@ import com.tavrida.counter_scanner.utils.copy
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.*
-import com.tavrida.utils.camera.YuvToRgbConverter2
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.opencv.android.OpenCVLoader
 import java.io.File
@@ -42,18 +41,8 @@ class CameraActivity : AppCompatActivity() {
     private val started get() = !stopped
     private var recordingEnabled = false
 
-    private val yuvToRgbConverter by lazy { YuvToRgbConverter2(this) }
-    private val imageConverter = Bitmap2RgbMatConverter()
-    private var __bitmapBuffer: Bitmap? = null
-
-    private fun getBitmapBuffer(width: Int, height: Int): Bitmap {
-        if (__bitmapBuffer == null) {
-            __bitmapBuffer = Bitmap.createBitmap(
-                width, height, Bitmap.Config.ARGB_8888
-            )
-        }
-        return __bitmapBuffer!!
-    }
+    private val cameraImageConverter by lazy { CameraImageConverter(this) }
+    private val bmpToMatConverter = Bitmap2RgbMatConverter()
 
     private val counterScannerProvider by lazy { CounterScannerProvider(this) }
 
@@ -65,7 +54,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun initLazyVars() {
         //init lazies
-        yuvToRgbConverter
+        cameraImageConverter
         counterScannerProvider
         detectionLogger
     }
@@ -170,22 +159,20 @@ class CameraActivity : AppCompatActivity() {
 
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
-        val inputBitmap = image.use {
-            getBitmapBuffer(image.width, image.height)
-                .apply { yuvToRgbConverter.yuvToRgb(image, this) }
-                .compensateSensorRotation(image.imageInfo.rotationDegrees)
+        val (readyForProcessing, readyForDisplay) = image.use {
+            cameraImageConverter.convert(it)
         }
 
         if (started) {
-            val detectorInput = imageConverter.convert(inputBitmap)
+            val detectorInput = bmpToMatConverter.convert(readyForProcessing)
                 .copy() // !!!make COPY - because detectorInput queued to detectorJob!!!
             val result = counterScanner!!.scan(detectorInput)
 
-            showDetectionResults(inputBitmap, result, measureAnalyzeImageCall())
+            showDetectionResults(readyForDisplay, result, measureAnalyzeImageCall())
         } else {
             //simply show original frame
             imageView_preview.post {
-                imageView_preview.setImageBitmap(inputBitmap)
+                imageView_preview.setImageBitmap(readyForDisplay)
             }
         }
     }
