@@ -118,8 +118,8 @@ class CameraActivity : AppCompatActivity() {
             val cameraProvider = cameraProviderFuture.get()
 
             //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
-            val w = 1280
-            val h = 960
+            val w = 800
+            val h = 600
             val targetRes = when (imageView_preview.display.rotation) {
                 Surface.ROTATION_90, Surface.ROTATION_270 -> Size(w, h)
                 Surface.ROTATION_0, Surface.ROTATION_180 -> Size(h, w)
@@ -143,7 +143,7 @@ class CameraActivity : AppCompatActivity() {
                 this as LifecycleOwner, cameraSelector, imageAnalysis
             )
 
-            imageView_preview.afterMeasured { setupAutoFocus(imageView_preview, camera!!) }
+            imageView_preview.afterMeasured { setupAutoFocus(imageView_preview, camera) }
 
         }, ContextCompat.getMainExecutor(this))
     }
@@ -164,7 +164,6 @@ class CameraActivity : AppCompatActivity() {
 
         if (started) {
             val detectorInput = bmpToMatConverter.convert(readyForProcessing)
-                .copy() // !!!make COPY - because detectorInput queued to detectorJob!!!
             val result = counterScanner!!.scan(detectorInput)
 
             showDetectionResults(readyForDisplay, result, measureAnalyzeImageCall())
