@@ -3,8 +3,8 @@ package com.tavrida.counter_scanner.scanning
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.aggregation.DigitAtBox
-import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
 import com.tavrida.counter_scanner.utils.rgb2gray
+import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
 import org.opencv.core.Mat
 import org.opencv.core.Rect2d
@@ -14,7 +14,7 @@ import kotlin.IllegalStateException
 import kotlin.collections.ArrayList
 
 class NonblockingCounterReadingScanner(
-    detector: TwoStageDigitsDetector,
+    detector: TfliteDetector,
     val readingStabilityThresholdMs: Long
 ) : Closeable {
     data class ScanResult(

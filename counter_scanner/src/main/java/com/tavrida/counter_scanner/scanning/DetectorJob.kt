@@ -3,13 +3,14 @@ package com.tavrida.counter_scanner.scanning
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
+import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
 import org.opencv.core.Mat
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
 internal class DetectorJob(
-    private val detector: TwoStageDigitsDetector,
+    private val detector: TfliteDetector,
     private val detectionTracker: AggregatedDigitDetectionTracker,
     private val digitExtractor: AggregatingBoxGroupingDigitExtractor
 ) {
