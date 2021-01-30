@@ -119,4 +119,22 @@ private object roi {
             }
         }
     }
+
+
+    const val MODEL_FILE = "screen_digits_320x128_251.tflite"
+
+        private fun detector(context: Context) =
+            mapAssetFile(context, MODEL_FILE)
+                .let { TfliteDetector(it, 128, 320) }
+
+        private fun mapAssetFile(context: Context, fileName: String): ByteBuffer {
+            val assetFd = context.assets.openFd(fileName)
+            val start = assetFd.startOffset
+            val length = assetFd.declaredLength
+            return FileInputStream(assetFd.fileDescriptor).channel
+                .map(FileChannel.MapMode.READ_ONLY, start, length)
+        }
+
+
+
 * */
