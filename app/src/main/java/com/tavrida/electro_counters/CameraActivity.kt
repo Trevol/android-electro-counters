@@ -1,7 +1,6 @@
 package com.tavrida.electro_counters
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
@@ -18,7 +17,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
-import com.tavrida.counter_scanner.utils.copy
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.*
@@ -165,7 +163,6 @@ class CameraActivity : AppCompatActivity() {
         if (started) {
             val detectorInput = bmpToMatConverter.convert(readyForProcessing)
             val result = counterScanner!!.scan(detectorInput)
-
             showDetectionResults(readyForDisplay, result, measureAnalyzeImageCall())
         } else {
             //simply show original frame
