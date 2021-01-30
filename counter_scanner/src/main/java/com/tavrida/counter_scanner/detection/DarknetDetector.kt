@@ -124,8 +124,7 @@ class DarknetDetector {
                 ObjectDetectionResult(
                     classIds[i],
                     classScores[i],
-                    boxes[i],
-                    normalizedBoxes[i]
+                    boxes[i]
                 )
             }
     }
