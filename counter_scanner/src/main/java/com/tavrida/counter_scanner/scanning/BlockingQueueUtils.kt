@@ -1,4 +1,4 @@
-package com.tavrida.counter_scanner.scanning.nonblocking
+package com.tavrida.counter_scanner.scanning
 
 import java.util.concurrent.BlockingQueue
 

@@ -16,7 +16,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
+import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.*

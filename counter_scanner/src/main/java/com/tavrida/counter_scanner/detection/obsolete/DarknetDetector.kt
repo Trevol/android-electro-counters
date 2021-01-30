@@ -1,4 +1,4 @@
-package com.tavrida.counter_scanner.detection
+package com.tavrida.counter_scanner.detection.obsolete
 
 import org.opencv.core.*
 import org.opencv.dnn.Dnn
@@ -6,6 +6,7 @@ import org.opencv.dnn.Net
 import com.tavrida.counter_scanner.utils.latterbox
 import kotlin.collections.ArrayList
 
+/*
 class DarknetDetector {
     var confThreshold: Float = 0.3f
     var nmsThreshold: Float = 0.4f
@@ -156,4 +157,5 @@ class DarknetDetector {
 
     }
 }
+*/
 

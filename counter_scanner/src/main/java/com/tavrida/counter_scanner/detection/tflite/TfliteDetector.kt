@@ -1,15 +1,18 @@
 package com.tavrida.electro_counters.detection.tflite.new_detector
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.RectF
+import com.tavrida.counter_scanner.detection.ObjectDetectionResult
+import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.support.common.TensorOperator
 import org.tensorflow.lite.support.image.ImageProcessor
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
-import java.io.FileInputStream
+import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import org.tensorflow.lite.support.tensorbuffer.TensorBufferFloat
 import java.nio.ByteBuffer
-import java.nio.channels.FileChannel
+
 
 class TfliteDetector(
     private val interpreter: Interpreter,
@@ -38,7 +41,7 @@ class TfliteDetector(
         3 to FloatArray(1)
     )
 
-    fun detect(img: Bitmap, scoreThreshold: Float): List<ObjectDetection> {
+    fun detect(img: Bitmap, scoreThreshold: Float): List<ObjectDetectionResult> {
         tensorImage.load(img)
         val processedImg = imageProcessor.process(tensorImage)
         interpreter.runForMultipleInputsOutputs(
@@ -48,7 +51,7 @@ class TfliteDetector(
         val detections = (0 until NUM_DETECTIONS)
             .filter { indx -> scores[0][indx] >= scoreThreshold }
             .map { indx ->
-                ObjectDetection(
+                ObjectDetectionResult(
                     location = locations[0][indx].let {
                         val (y1, x1, y2, x2) = it
                         RectF(
@@ -65,8 +68,6 @@ class TfliteDetector(
         return detections
     }
 
-    data class ObjectDetection(val location: RectF, val classId: Int, val score: Float)
-
     private companion object {
         const val NUM_DETECTIONS = 10
 
@@ -80,5 +81,29 @@ class TfliteDetector(
             options.setUseXNNPACK(true)
             return Interpreter(modelFile, options).apply { allocateTensors() }
         }
+    }
+}
+
+private class NormalizePlusMinus1Op : TensorOperator {
+    override fun apply(input: TensorBuffer): TensorBuffer {
+        // clip to [-1, 1] range => [0, 2] => subtract -1 => [-1, 1]
+        val values = input.floatArray
+        for (i in values.indices) {
+            values[i] = f * values[i] - 1f
+        }
+
+        val inputShape = input.shape
+        val output = if (input.isDynamic) {
+            TensorBufferFloat.createDynamic(DataType.FLOAT32)
+        } else {
+            TensorBufferFloat.createFixedSize(inputShape, DataType.FLOAT32)
+        }
+
+        output.loadArray(values, inputShape)
+        return output
+    }
+
+    private companion object {
+        const val f = 2f / 255f
     }
 }

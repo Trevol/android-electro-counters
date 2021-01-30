@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
+import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
 import com.tavrida.utils.PaintFontSizeManager
 import com.tavrida.utils.toRectF
 

@@ -1,5 +1,5 @@
-package com.tavrida.counter_scanner.detection
-
+package com.tavrida.counter_scanner.detection.obsolete
+/*
 import org.opencv.core.Rect2d
 
 data class TwoStageDigitDetectionResult(
@@ -11,4 +11,4 @@ data class TwoStageDigitDetectionResult(
     val digitsDetections: List<DigitDetectionResult>
 )
 
-data class DigitDetectionResult(val digit: Int, val score: Float, val boxInImage: Rect2d)
+data class DigitDetectionResult(val digit: Int, val score: Float, val boxInImage: Rect2d)*/

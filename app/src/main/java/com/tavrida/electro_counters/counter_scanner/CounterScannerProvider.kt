@@ -3,9 +3,8 @@ package com.tavrida.electro_counters.counter_scanner
 import android.content.Context
 import com.tavrida.counter_scanner.detection.DarknetDetector
 import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
-import com.tavrida.counter_scanner.scanning.nonblocking.NonblockingCounterReadingScanner
+import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
 import com.tavrida.utils.Asset
-import org.opencv.android.OpenCVLoader
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 

@@ -1,6 +1,6 @@
-package com.tavrida.counter_scanner.detection
+package com.tavrida.counter_scanner.detection.obsolete
 
-import com.tavrida.counter_scanner.utils.*
+/*import com.tavrida.counter_scanner.utils.*
 import org.opencv.core.Mat
 import org.opencv.core.Rect
 import org.opencv.core.Rect2d
@@ -38,7 +38,7 @@ class TwoStageDigitsDetector(
             height
         )
     }
-}
+}*/
 
 
 
