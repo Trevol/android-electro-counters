@@ -17,12 +17,12 @@ import java.nio.ByteBuffer
 class TfliteDetector(
     private val interpreter: Interpreter,
     targetHeight: Int = 320,
-    targetWidth: Int = 320
+    targetWidth: Int = 128
 ) {
     constructor(
         modelFile: ByteBuffer,
         targetHeight: Int = 320,
-        targetWidth: Int = 320
+        targetWidth: Int = 128
     ) : this(interpreter(modelFile), targetHeight, targetWidth)
 
     private val tensorImage = TensorImage()
@@ -61,7 +61,7 @@ class TfliteDetector(
                             y2 * img.height
                         )
                     },
-                    classId = classIds[0][indx].toInt() + 1,
+                    classId = classIds[0][indx].toInt(),
                     score = scores[0][indx]
                 )
             }

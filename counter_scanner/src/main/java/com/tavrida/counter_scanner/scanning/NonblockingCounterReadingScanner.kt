@@ -1,24 +1,29 @@
 package com.tavrida.counter_scanner.scanning
 
+import android.graphics.Bitmap
+import android.graphics.Point
+import android.graphics.RectF
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
-import com.tavrida.counter_scanner.aggregation.DigitAtBox
+import com.tavrida.counter_scanner.aggregation.DigitAtLocation
+import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.counter_scanner.utils.rgb2gray
-import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
+import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.core.Rect2d
+import org.opencv.imgproc.Imgproc
 import java.io.Closeable
 import java.util.*
 import kotlin.IllegalStateException
 import kotlin.collections.ArrayList
 
 class NonblockingCounterReadingScanner(
-    detector: TfliteDetector,
+    detector: ScreenDigitDetector,
     val readingStabilityThresholdMs: Long
 ) : Closeable {
     data class ScanResult(
-        val digitsAtBoxes: List<DigitAtBox>,
+        val digitsAtLocations: List<DigitAtLocation>,
         val aggregatedDetections: List<AggregatedDetections>,
         val readingInfo: ReadingInfo?
     ) {
@@ -26,7 +31,7 @@ class NonblockingCounterReadingScanner(
     }
 
     var stopped = false
-
+    private val bitmapToMats = BitmapToMats()
     private val detectionTracker = AggregatedDigitDetectionTracker()
     private val digitExtractor = AggregatingBoxGroupingDigitExtractor()
     private val detectorJob = DetectorJob(detector, detectionTracker, digitExtractor)
@@ -47,15 +52,29 @@ class NonblockingCounterReadingScanner(
         stopped = true
     }
 
-    fun scan(rgbImg: Mat): ScanResult {
-        ensureStarted()
-        val grayImg = rgbImg.rgb2gray()
+    private fun extractRoi(inputImg: Bitmap): Pair<Bitmap, Point> {
+        TODO()
+    }
 
-        detectorJob.input.put(DetectorJobInputItem(serialSeq, rgbImg, grayImg))
+    private fun scanQR(rgbMat: Mat) {
+        TODO()
+    }
+
+    fun scan(inputImg: Bitmap): ScanResult {
+        ensureStarted()
+
+
+
+        val (detectionRoi, roiOrigin) = extractRoi(inputImg)
+        val (rgbMat, grayMat) = bitmapToMats.convert(inputImg)
+
+        scanQR(rgbMat)
+
+        detectorJob.input.put(DetectorJobInputItem(serialSeq, detectionRoi, roiOrigin, grayMat))
         if (prevFrameItems.isEmpty()) {
             // special processing of first frame
             // no prev frame and detections to continue processing - so skipping processing
-            prevFrameItems.add(SerialGrayItem(serialSeq, grayImg))
+            prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
             return noDetections()
         }
         // TODO: specify timeout here - scanner blocked for infinite time if detector job stopped
@@ -65,15 +84,15 @@ class NonblockingCounterReadingScanner(
             val frames = prevFrameItems.bySerialId(detectorResult.serialId)
                 .map { it.gray }
                 .toMutableList()
-            frames.add(grayImg)
+            frames.add(grayMat)
             actualDetections = detectionTracker.track(frames, detectorResult.detections)
             prevFrameItems.clear()
         } else {
             val prevGray = prevFrameItems.last().gray
-            actualDetections = detectionTracker.track(prevGray, grayImg, actualDetections)
+            actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
         }
 
-        prevFrameItems.add(SerialGrayItem(serialSeq, grayImg))
+        prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
 
         serialSeq++
         val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
@@ -83,10 +102,10 @@ class NonblockingCounterReadingScanner(
 
     var prevReading = ""
     var startOfReadingMs = -1L
-    private fun readingInfo(digitsAtBoxes: List<DigitAtBox>): ScanResult.ReadingInfo? {
-        if (digitsAtBoxes.isEmpty())
+    private fun readingInfo(digitsAtLocations: List<DigitAtLocation>): ScanResult.ReadingInfo? {
+        if (digitsAtLocations.isEmpty())
             return null
-        val reading = digitsAtBoxes.toReading()
+        val reading = digitsAtLocations.toReading()
         if (reading != prevReading) { // new reading available
             prevReading = reading
             startOfReadingMs = System.currentTimeMillis()
@@ -100,17 +119,17 @@ class NonblockingCounterReadingScanner(
     }
 
     private companion object {
-        private fun List<DigitAtBox>.toReading(): String {
-            return sortedBy { it.box.x }
+        private fun List<DigitAtLocation>.toReading(): String {
+            return sortedBy { it.location.left }
                 .removeVerticalDigits()
                 .map { it.digit }
                 .joinToString("") { it.toString() }
         }
 
-        private fun List<DigitAtBox>.removeVerticalDigits(): List<DigitAtBox> {
+        private fun List<DigitAtLocation>.removeVerticalDigits(): List<DigitAtLocation> {
             if (size <= 1)
                 return this
-            val resultItems = ArrayList<DigitAtBox>(size)
+            val resultItems = ArrayList<DigitAtLocation>(size)
             val srcItems = LinkedList(this)
 
             while (srcItems.isNotEmpty()) {
@@ -129,21 +148,19 @@ class NonblockingCounterReadingScanner(
             return resultItems
         }
 
-        private fun chooseVerticallyLower(d1: DigitAtBox, d2: DigitAtBox) =
-            if (d1.box.y > d2.box.y) d1 else d2
+        private fun chooseVerticallyLower(d1: DigitAtLocation, d2: DigitAtLocation) =
+            if (d1.location.top > d2.location.top) d1 else d2
 
-        private fun DigitAtBox.getVertical(others: Iterable<DigitAtBox>): DigitAtBox? {
-            return others.firstOrNull { it.box.isVerticalTo(this.box) }
+        private fun DigitAtLocation.getVertical(others: Iterable<DigitAtLocation>): DigitAtLocation? {
+            return others.firstOrNull { it.location.isVerticalTo(this.location) }
         }
 
-        private fun Rect2d.isVerticalTo(other: Rect2d): Boolean {
-            return this.x.between(other.x, other.br().x) || this.br().x.between(
-                other.x,
-                other.br().x
-            )
+        private fun RectF.isVerticalTo(other: RectF): Boolean {
+            return this.left.between(other.left, other.right) ||
+                    this.right.between(other.left, other.right)
         }
 
-        private inline fun Double.between(v1: Double, v2: Double) = this in v1..v2
+        private inline fun Float.between(v1: Float, v2: Float) = this in v1..v2
 
         private data class SerialGrayItem(val serialId: Int, val gray: Mat)
 
@@ -155,6 +172,17 @@ class NonblockingCounterReadingScanner(
             return subList(serialIdIndex, lastIndex + 1)
             // return this.filter { it.serialId >= serialId }
         }
+    }
+}
+
+private class BitmapToMats {
+    private val rgbaBuffer = Mat()
+    private val rgbBuffer = Mat()
+
+    fun convert(image: Bitmap): Pair<Mat, Mat> {
+        Utils.bitmapToMat(image, rgbaBuffer, true)
+        Imgproc.cvtColor(rgbaBuffer, rgbBuffer, Imgproc.COLOR_RGBA2RGB)
+        return rgbBuffer to rgbBuffer.rgb2gray()
     }
 }
 

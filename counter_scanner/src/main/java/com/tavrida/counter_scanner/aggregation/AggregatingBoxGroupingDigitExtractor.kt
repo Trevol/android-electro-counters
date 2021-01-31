@@ -3,7 +3,7 @@ package com.tavrida.counter_scanner.aggregation
 import com.tavrida.counter_scanner.detection.DigitDetectionResult
 
 data class Digits_AggregatedDetections(
-    val digitsAtBoxes: List<DigitAtBox>,
+    val digitsAtLocations: List<DigitAtLocation>,
     val aggregatedDetections: List<AggregatedDetections>
 )
 
@@ -20,8 +20,8 @@ class AggregatingBoxGroupingDigitExtractor {
         currentDetections: Collection<DigitDetectionResult>,
         prevDetections: Collection<AggregatedDetections>
     ): List<AggregatedDetections> {
-        val boxes = currentDetections.map { it.boxInImage } +
-                prevDetections.map { it.box }
+        val boxes = currentDetections.map { it.location } +
+                prevDetections.map { it.location }
         val scores = currentDetections.map { it.score } + prevDetections.map { it.score }
         val digitsCounts = currentDetections.map { listOf(DigitCount(it.digit, 1)) } +
                 prevDetections.map { it.digitsCounts }
@@ -36,7 +36,7 @@ class AggregatingBoxGroupingDigitExtractor {
 
     fun extractDigits(detections: Collection<AggregatedDetections>) = detections
         .filter { it.totalCount >= minBoxesInGroup }
-        .map { DigitAtBox(it.digitWithMaxCount, it.box) }
+        .map { DigitAtLocation(it.digitWithMaxCount, it.location) }
 
     companion object {
         const val minBoxesInGroup = 3

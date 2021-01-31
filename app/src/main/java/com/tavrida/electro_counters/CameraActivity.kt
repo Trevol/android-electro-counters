@@ -39,8 +39,8 @@ class CameraActivity : AppCompatActivity() {
     private val started get() = !stopped
     private var recordingEnabled = false
 
-    private val cameraImageConverter by lazy { CameraImageConverter(this) }
-    private val bmpToMatConverter = Bitmap2RgbMatConverter()
+    private val cameraImageConverter by lazy { CameraImageConverter2(this) }
+    // private val bmpToMatConverter = Bitmap2RgbMatConverter()
 
     private val counterScannerProvider by lazy { CounterScannerProvider(this) }
 
@@ -156,18 +156,15 @@ class CameraActivity : AppCompatActivity() {
     }
 
     fun analyzeImage(image: ImageProxy) {
-        val (readyForProcessing, readyForDisplay) = image.use {
-            cameraImageConverter.convert(it)
-        }
+        val bitmap = image.use { cameraImageConverter.convert(it) }
 
         if (started) {
-            val detectorInput = bmpToMatConverter.convert(readyForProcessing)
-            val result = counterScanner!!.scan(detectorInput)
-            showDetectionResults(readyForDisplay, result, measureAnalyzeImageCall())
+            val result = counterScanner!!.scan(bitmap)
+            showDetectionResults(bitmap, result, measureAnalyzeImageCall())
         } else {
             //simply show original frame
             imageView_preview.post {
-                imageView_preview.setImageBitmap(readyForDisplay)
+                imageView_preview.setImageBitmap(bitmap)
             }
         }
     }

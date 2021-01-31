@@ -26,6 +26,7 @@ import android.renderscript.Element
 import android.renderscript.RenderScript
 import android.renderscript.ScriptIntrinsicYuvToRGB
 import android.renderscript.Type
+import androidx.camera.core.ImageProxy
 import java.nio.ByteBuffer
 
 /**
@@ -51,7 +52,7 @@ class YuvToRgbConverter(context: Context) {
     private lateinit var outputAllocation: Allocation
 
     @Synchronized
-    fun yuvToRgb(image: Image, output: Bitmap) {
+    fun yuvToRgb(image: ImageProxy, output: Bitmap) {
 
         // Ensure that the intermediate output byte buffer is allocated
         if (!::yuvBuffer.isInitialized) {
@@ -85,7 +86,7 @@ class YuvToRgbConverter(context: Context) {
         outputAllocation.copyTo(output)
     }
 
-    private fun imageToByteBuffer(image: Image, outputBuffer: ByteArray) {
+    private fun imageToByteBuffer(image: ImageProxy, outputBuffer: ByteArray) {
         assert(image.format == ImageFormat.YUV_420_888)
 
         val imageCrop = image.cropRect

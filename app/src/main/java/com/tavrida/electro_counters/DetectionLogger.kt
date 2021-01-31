@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.RectF
 import com.tavrida.counter_scanner.detection.DigitDetectionResult
 import com.tavrida.counter_scanner.detection.ObjectDetectionResult
-import com.tavrida.counter_scanner.detection.TwoStageDigitDetectionResult
 import com.tavrida.utils.roi
 
 import com.tavrida.utils.saveAsJpeg
@@ -31,17 +30,18 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
         get() = !loggingEnabled
 
     private fun toggleLogging(enabled: Boolean) {
-        detectionId = 0
+        return
+        /*detectionId = 0
         sessionId = if (enabled) createTimestamp() else ""
         var d: Boolean
         if (enabled) {
             // TODO("check dir existence and creation")
             val r = logDir.mkdirs()
             d = r
-        }
+        }*/
     }
 
-    fun log(
+    /*fun log(
         detectionResult: TwoStageDigitDetectionResult,
         inputBitmap: Bitmap,
         inputBitmapWithDrawing: Bitmap,
@@ -107,5 +107,5 @@ class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
         private const val TIMESTAMP_FORMAT = "yyyy-MM-dd-HH-mm-ss-SSS"
         private fun createTimestamp() =
             SimpleDateFormat(TIMESTAMP_FORMAT, Locale.US).format(System.currentTimeMillis())
-    }
+    }*/
 }

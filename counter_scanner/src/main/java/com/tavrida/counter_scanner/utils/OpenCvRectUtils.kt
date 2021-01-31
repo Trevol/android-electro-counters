@@ -7,7 +7,10 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 
-fun Rect2d(x: Int, y: Int, width: Int, height: Int) =
+inline fun Rect2d(x: Int, y: Int, width: Int, height: Int) =
+    Rect2d(x.toDouble(), y.toDouble(), width.toDouble(), height.toDouble())
+
+inline fun Rect2d(x: Float, y: Float, width: Float, height: Float) =
     Rect2d(x.toDouble(), y.toDouble(), width.toDouble(), height.toDouble())
 
 fun Rect2d.toRect() = Rect(x.roundToInt(), y.roundToInt(), width.roundToInt(), height.roundToInt())

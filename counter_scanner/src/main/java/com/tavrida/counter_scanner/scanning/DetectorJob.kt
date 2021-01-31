@@ -1,16 +1,17 @@
 package com.tavrida.counter_scanner.scanning
 
+import android.graphics.Bitmap
+import android.graphics.Point
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
-import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
-import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
+import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
 import org.opencv.core.Mat
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 
 internal class DetectorJob(
-    private val detector: TfliteDetector,
+    private val detector: ScreenDigitDetector,
     private val detectionTracker: AggregatedDigitDetectionTracker,
     private val digitExtractor: AggregatingBoxGroupingDigitExtractor
 ) {
@@ -24,7 +25,7 @@ internal class DetectorJob(
         var itemForDetection = input.takeLast()
         while (isRunning()) {
             val detectionsForFrame =
-                detector.detect(itemForDetection.rgb)?.digitsDetections ?: listOf()
+                detector.detect(itemForDetection.detectionRoi).digitsDetections
 
             if (isInterrupted()) { // can be interrupted during relatively long detection stage
                 break
@@ -72,5 +73,5 @@ internal class DetectorJob(
     }
 }
 
-data class DetectorJobInputItem(val serialId: Int, val rgb: Mat, val gray: Mat)
+data class DetectorJobInputItem(val serialId: Int, val detectionRoi: Bitmap, val roiOrigin: Point, val gray: Mat)
 data class DetectorJobOutputItem(val serialId: Int, val detections: List<AggregatedDetections>)

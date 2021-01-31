@@ -1,13 +1,18 @@
 package com.tavrida.counter_scanner.aggregation
 
-import org.opencv.core.Rect2d
-import com.tavrida.counter_scanner.utils.overlap
+import android.graphics.RectF
+import com.tavrida.counter_scanner.utils.assert
+import com.tavrida.utils.overlap
 
 data class GroupBoxesResult(val groupIndices: Collection<Int>, val keptIndices: Collection<Int>)
 
-fun groupBoxes(boxes: List<Rect2d>, scores: Collection<Float>?, overlap_threshold: Float): GroupBoxesResult {
-    assert(scores == null || (boxes.size == scores.size))
-    assert(overlap_threshold >= 0)
+fun groupBoxes(
+    boxes: List<RectF>,
+    scores: Collection<Float>?,
+    overlap_threshold: Float
+): GroupBoxesResult {
+    (scores == null || (boxes.size == scores.size)).assert()
+    (overlap_threshold >= 0).assert()
 
     data class IndexToGroup(val index: Int, val groupIndex: Int)
 
@@ -31,7 +36,7 @@ data class ShouldKeepBoxResult(val keep: Boolean, val maxOverlapIndex: Int)
 
 private fun shouldKeepBox(
     currentBoxIndex: Int,
-    boxes: List<Rect2d>,
+    boxes: List<RectF>,
     keptIndices: Collection<Int>,
     overlap_threshold: Float
 ): ShouldKeepBoxResult {
@@ -52,6 +57,7 @@ private fun shouldKeepBox(
     return ShouldKeepBoxResult(keep, maxOverlapIndex)
 }
 
-private inline fun indicesByScore(boxes: Collection<Rect2d>, scores: Collection<Float>?) =
-    scores?.mapIndexed { index, score -> index to score }?.sortedByDescending { it.second }?.map { it.first }
+private inline fun indicesByScore(boxes: Collection<RectF>, scores: Collection<Float>?) =
+    scores?.mapIndexed { index, score -> index to score }?.sortedByDescending { it.second }
+        ?.map { it.first }
         ?: boxes.mapIndexed { index, _ -> index }

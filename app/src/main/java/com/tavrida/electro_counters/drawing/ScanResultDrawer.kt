@@ -6,7 +6,6 @@ import android.graphics.Color
 import android.graphics.Paint
 import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
 import com.tavrida.utils.PaintFontSizeManager
-import com.tavrida.utils.toRectF
 
 class ScanResultDrawer {
     companion object {
@@ -29,8 +28,8 @@ class ScanResultDrawer {
         scanResult: NonblockingCounterReadingScanner.ScanResult
     ): Bitmap {
         val canvas = Canvas(inputBitmap)
-        for (d in scanResult.digitsAtBoxes) {
-            val box = d.box.toRectF()
+        for (d in scanResult.digitsAtLocations) {
+            val box = d.location.toRectF()
             canvas.drawRect(box, digitsBoxPaint)
 
             val text = d.digit.toString()
