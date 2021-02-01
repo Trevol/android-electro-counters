@@ -79,19 +79,21 @@ class NonblockingCounterReadingScanner(
             val frames = prevFrameItems.bySerialId(detectorResult.serialId)
                 .map { it.gray }
                 .toMutableList()
-            "detectorResult != null. prevFrameItems(${prevFrameItems.size}) frames(${frames.size}) ".log("NonblockingCounterReadingScanner")
+            "detectorResult != null. serialId: ${detectorResult.serialId}. prevFrameItems(${prevFrameItems.map { it.serialId }}) frames(${frames.size}) "
+                .log("NonblockingCounterReadingScanner")
             frames.add(grayMat)
             actualDetections = detectionTracker.track(frames, detectorResult.detections)
             prevFrameItems.clear()
         } else {
-            "detectorResult == null. prevFrameItems(${prevFrameItems.size}".log("NonblockingCounterReadingScanner")
+            "detectorResult == null. prevFrameItems(${prevFrameItems.map { it.serialId }}"
+                .log("NonblockingCounterReadingScanner")
             val prevGray = prevFrameItems.last().gray
             actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
         }
 
         prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
-
         serialSeq++
+
         val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
         val readingInfo = readingInfo(digitsAtBoxes)
         return ScanResult(digitsAtBoxes, actualDetections, readingInfo)
@@ -116,6 +118,7 @@ class NonblockingCounterReadingScanner(
     }
 
     private companion object {
+        var callId = 0
         private fun List<DigitAtLocation>.toReading(): String {
             return sortedBy { it.location.left }
                 .removeVerticalDigits()
@@ -166,6 +169,9 @@ class NonblockingCounterReadingScanner(
         private fun List<SerialGrayItem>.bySerialId(serialId: Int): List<SerialGrayItem> {
             val firstSerialId = this[0].serialId
             val serialIdIndex = serialId - firstSerialId
+            if (serialIdIndex == -1) {
+                "serialIdIndex == -1. serialId=$serialId firstSerialId=$firstSerialId".log("NonblockingCounterReadingScanner")
+            }
             return subList(serialIdIndex, lastIndex + 1)
             // return this.filter { it.serialId >= serialId }
         }

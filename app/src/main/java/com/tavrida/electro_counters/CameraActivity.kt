@@ -96,12 +96,15 @@ class CameraActivity : AppCompatActivity() {
     }
 
     fun startStopListener() {
-        stopped = !stopped
+        val stopped = !stopped
         if (stopped) {
             stopScanner()
         } else {
             counterScanner = counterScannerProvider.createScanner(this, detectorRoi)
         }
+        // update flag at the end
+        // because vars are accessed in separate thread (analyzeImage)
+        this.stopped = stopped
         syncAnalysisUIState()
     }
 
