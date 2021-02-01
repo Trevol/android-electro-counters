@@ -32,9 +32,9 @@ class CounterScannerProvider2() {
         private fun createInstance(context: Context, warmup: Boolean = true): TfliteDetector {
             val instance = mapAssetFile(context, MODEL_FILE)
                 .let { TfliteDetector(it, inputSize.height, inputSize.width) }
-            if (warmup){
-                Bitmap.createBitmap(inputSize.width, inputSize.height, )
-                instance.detect()
+            if (warmup) {
+                Bitmap.createBitmap(inputSize.width, inputSize.height, Bitmap.Config.ARGB_8888)
+                    .let { instance.detect(it, .2f) }
             }
             return instance
         }

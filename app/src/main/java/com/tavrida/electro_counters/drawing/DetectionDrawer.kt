@@ -1,5 +1,6 @@
 package com.tavrida.electro_counters.drawing
 
+/*
 import android.graphics.*
 import com.tavrida.counter_scanner.detection.TwoStageDigitDetectionResult
 import com.tavrida.utils.PaintFontSizeManager
@@ -50,7 +51,8 @@ class DetectionDrawer {
         ).apply { eraseColor(gray) }
 
         val screenImageCanvas = Canvas(screenImage)
-        /*val digitsImageCanvas = Canvas(digitsDetectionBitmap)
+        */
+/*val digitsImageCanvas = Canvas(digitsDetectionBitmap)
         for (d in detectionResult.digitsDetections) {
             val boxF = d.boxInScreen.toRectF()
             screenImageCanvas.drawRect(boxF, digitsBoxPaint)
@@ -65,7 +67,8 @@ class DetectionDrawer {
                 boxF.bottom - 2,
                 digitPaint
             )
-        }*/
+        }*//*
+
         return DrawResult(inputImage, screenImage, digitsDetectionBitmap)
     }
-}
+}*/

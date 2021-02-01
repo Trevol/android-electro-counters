@@ -1,5 +1,6 @@
 package com.tavrida.electro_counters.counter_scanner
 
+/*
 import android.content.Context
 import com.tavrida.counter_scanner.detection.DarknetDetector
 import com.tavrida.counter_scanner.detection.TwoStageDigitsDetector
@@ -61,4 +62,4 @@ class CounterScannerProvider(context: Context) {
             }
         }
     }
-}
+}*/

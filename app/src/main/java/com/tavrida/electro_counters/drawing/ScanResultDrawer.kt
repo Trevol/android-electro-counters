@@ -29,12 +29,11 @@ class ScanResultDrawer {
     ): Bitmap {
         val canvas = Canvas(inputBitmap)
         for (d in scanResult.digitsAtLocations) {
-            val box = d.location.toRectF()
-            canvas.drawRect(box, digitsBoxPaint)
+            canvas.drawRect(d.location, digitsBoxPaint)
 
             val text = d.digit.toString()
-            digitPaintManager.setTextSizeForHeight(box.height() - 4, text)
-            canvas.drawText(text, box.left + 2, box.top - 2, digitPaintManager.paint)
+            digitPaintManager.setTextSizeForHeight(d.location.height() - 4, text)
+            canvas.drawText(text, d.location.left + 2, d.location.top - 2, digitPaintManager.paint)
         }
         return inputBitmap
     }

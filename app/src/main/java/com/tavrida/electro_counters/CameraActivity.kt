@@ -17,7 +17,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
-import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider
+import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.*
 import kotlinx.android.synthetic.main.activity_camera.*
@@ -42,7 +42,7 @@ class CameraActivity : AppCompatActivity() {
     private val cameraImageConverter by lazy { CameraImageConverter2(this) }
     // private val bmpToMatConverter = Bitmap2RgbMatConverter()
 
-    private val counterScannerProvider by lazy { CounterScannerProvider(this) }
+    private val counterScannerProvider by lazy { CounterScannerProvider2() }
 
     var counterScanner: NonblockingCounterReadingScanner? = null
 
@@ -92,7 +92,7 @@ class CameraActivity : AppCompatActivity() {
         if (stopped) {
             stopScanner()
         } else {
-            counterScanner = counterScannerProvider.counterScanner()
+            counterScanner = counterScannerProvider.counterScanner(this)
         }
         syncAnalysisUIState()
     }
