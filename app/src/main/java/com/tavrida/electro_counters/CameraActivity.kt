@@ -16,6 +16,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.tavrida.counter_scanner.scanning.DetectionRoi
 import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
@@ -40,9 +41,11 @@ class CameraActivity : AppCompatActivity() {
     private var recordingEnabled = false
 
     private val cameraImageConverter by lazy { CameraImageConverter2(this) }
-    // private val bmpToMatConverter = Bitmap2RgbMatConverter()
-
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
+    private val detectorRoi = DetectionRoi(Size(400, 180))
+
+    //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
+    private val cameraRes = Size(800, 600)
 
     var counterScanner: NonblockingCounterReadingScanner? = null
 
@@ -92,7 +95,7 @@ class CameraActivity : AppCompatActivity() {
         if (stopped) {
             stopScanner()
         } else {
-            counterScanner = counterScannerProvider.counterScanner(this)
+            counterScanner = counterScannerProvider.createScanner(this, detectorRoi)
         }
         syncAnalysisUIState()
     }
@@ -115,12 +118,9 @@ class CameraActivity : AppCompatActivity() {
             // Camera provider is now guaranteed to be available
             val cameraProvider = cameraProviderFuture.get()
 
-            //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
-            val w = 800
-            val h = 600
             val targetRes = when (imageView_preview.display.rotation) {
-                Surface.ROTATION_90, Surface.ROTATION_270 -> Size(w, h)
-                Surface.ROTATION_0, Surface.ROTATION_180 -> Size(h, w)
+                Surface.ROTATION_90, Surface.ROTATION_270 -> cameraRes
+                Surface.ROTATION_0, Surface.ROTATION_180 -> Size(cameraRes.height, cameraRes.width)
                 else -> throw Exception("Unexpected display.rotation ${imageView_preview.display.rotation}")
             }
 

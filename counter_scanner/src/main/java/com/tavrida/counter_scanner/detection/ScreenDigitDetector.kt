@@ -1,12 +1,15 @@
 package com.tavrida.counter_scanner.detection
 
 import android.graphics.Bitmap
+import android.graphics.Point
 import android.graphics.RectF
 import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
 
 class ScreenDigitDetector(private val objectDetector: TfliteDetector) {
-    fun detect(img: Bitmap): ScreenDigitDetectionResult {
-        val objectDetections = objectDetector.detect(img, SCORE_THRESHOLD)
+    fun detect(img: Bitmap, imgOrigin: Point?): ScreenDigitDetectionResult {
+        val objectDetections = objectDetector
+            .detect(img, SCORE_THRESHOLD)
+            .remapToFullImage(imgOrigin)
         val screenDetection = objectDetections.firstOrNull { it.isScreen }
         val digitDetections = objectDetections.filter { it.isDigit }
         return ScreenDigitDetectionResult(
@@ -26,8 +29,25 @@ class ScreenDigitDetector(private val objectDetector: TfliteDetector) {
         const val screenClass = 10
         inline val ObjectDetectionResult.isScreen get() = classId == screenClass
         inline val ObjectDetectionResult.isDigit get() = !isScreen
+
+        private fun List<ObjectDetectionResult>.remapToFullImage(detectionOrigin: Point?) =
+            if (detectionOrigin == null)
+                this
+            else
+                this.map {
+                    ObjectDetectionResult(
+                        it.classId,
+                        it.score,
+                        it.location.remap(detectionOrigin)
+                    )
+                }
+
+        private inline fun RectF.remap(origin: Point) =
+            RectF(left + origin.x, top + origin.y, right + origin.x, bottom + origin.y)
+
     }
 }
+
 
 data class ScreenDigitDetectionResult(
     val screenDetection: ScreenDetectionResult?,

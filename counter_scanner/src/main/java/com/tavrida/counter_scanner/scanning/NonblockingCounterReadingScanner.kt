@@ -3,12 +3,14 @@ package com.tavrida.counter_scanner.scanning
 import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.RectF
+import android.util.Size
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.aggregation.DigitAtLocation
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.counter_scanner.utils.rgb2gray
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
+import com.tavrida.utils.tl
 import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.core.Rect2d
@@ -20,6 +22,7 @@ import kotlin.collections.ArrayList
 
 class NonblockingCounterReadingScanner(
     detector: ScreenDigitDetector,
+    val detectorRoi: DetectionRoi,
     val readingStabilityThresholdMs: Long
 ) : Closeable {
     data class ScanResult(
@@ -53,7 +56,8 @@ class NonblockingCounterReadingScanner(
     }
 
     private fun extractRoi(inputImg: Bitmap): Pair<Bitmap, Point> {
-        TODO()
+        val (roiImage, roiRect, roiOrigin) = detectorRoi.extractImage(inputImg)
+        return roiImage to roiOrigin
     }
 
     private fun scanQR(rgbMat: Mat) {
@@ -62,8 +66,6 @@ class NonblockingCounterReadingScanner(
 
     fun scan(inputImg: Bitmap): ScanResult {
         ensureStarted()
-
-
 
         val (detectionRoi, roiOrigin) = extractRoi(inputImg)
         val (rgbMat, grayMat) = bitmapToMats.convert(inputImg)

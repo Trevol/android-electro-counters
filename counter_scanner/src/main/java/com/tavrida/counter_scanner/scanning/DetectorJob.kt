@@ -25,7 +25,10 @@ internal class DetectorJob(
         var itemForDetection = input.takeLast()
         while (isRunning()) {
             val detectionsForFrame =
-                detector.detect(itemForDetection.detectionRoi).digitsDetections
+                detector.detect(
+                    itemForDetection.detectionRoiImage,
+                    itemForDetection.roiOrigin
+                ).digitsDetections
 
             if (isInterrupted()) { // can be interrupted during relatively long detection stage
                 break
@@ -73,5 +76,11 @@ internal class DetectorJob(
     }
 }
 
-data class DetectorJobInputItem(val serialId: Int, val detectionRoi: Bitmap, val roiOrigin: Point, val gray: Mat)
+data class DetectorJobInputItem(
+    val serialId: Int,
+    val detectionRoiImage: Bitmap,
+    val roiOrigin: Point,
+    val gray: Mat
+)
+
 data class DetectorJobOutputItem(val serialId: Int, val detections: List<AggregatedDetections>)

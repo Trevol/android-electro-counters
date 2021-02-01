@@ -1,10 +1,10 @@
 package com.tavrida.utils
 
 
+import android.graphics.Point
+import android.graphics.Rect
 import android.graphics.RectF
 import com.tavrida.counter_scanner.utils.Rect2d
-import org.opencv.core.Point
-import org.opencv.core.Rect
 import org.opencv.core.Rect2d
 import kotlin.math.max
 import kotlin.math.min
@@ -21,12 +21,8 @@ fun Rect2d.toRectF() = RectF(
     (this.y + this.height).toFloat()
 )
 
-fun Rect.toRectF() = RectF(
-    this.x.toFloat(),
-    this.y.toFloat(),
-    (this.x + this.width).toFloat(),
-    (this.y + this.height).toFloat()
-)
+inline fun Rect.tl() = Point(left, top)
+inline fun Rect.br() = Point(right, bottom)
 
 fun RectF.toViewCoordinates(viewWidth: Int, viewHeight: Int) = RectF(
     this.left * viewWidth,
