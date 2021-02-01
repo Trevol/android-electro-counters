@@ -70,6 +70,7 @@ class NonblockingCounterReadingScanner(
             // special processing of first frame
             // no prev frame and detections to continue processing - so skipping processing
             prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
+            callId++
             return noDetections()
         }
         // TODO: specify timeout here - scanner blocked for infinite time if detector job stopped
@@ -79,23 +80,26 @@ class NonblockingCounterReadingScanner(
             val frames = prevFrameItems.bySerialId(detectorResult.serialId)
                 .map { it.gray }
                 .toMutableList()
-            "detectorResult != null. serialId: ${detectorResult.serialId}. prevFrameItems(${prevFrameItems.map { it.serialId }}) frames(${frames.size}) "
+            "callId $callId. detectorResult != null. serialId: ${detectorResult.serialId}. prevFrameItems(${prevFrameItems.map { it.serialId }}) frames(${frames.size}) "
                 .log("NonblockingCounterReadingScanner")
             frames.add(grayMat)
             actualDetections = detectionTracker.track(frames, detectorResult.detections)
             prevFrameItems.clear()
         } else {
-            "detectorResult == null. prevFrameItems(${prevFrameItems.map { it.serialId }}"
+            "callId $callId. detectorResult == null. prevFrameItems(${prevFrameItems.map { it.serialId }}"
                 .log("NonblockingCounterReadingScanner")
             val prevGray = prevFrameItems.last().gray
             actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
         }
 
         prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
+        "callId $callId. prevFrameItems.add. prevFrameItems(${prevFrameItems.map { it.serialId }})"
+            .log("NonblockingCounterReadingScanner")
         serialSeq++
 
         val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
         val readingInfo = readingInfo(digitsAtBoxes)
+        callId++
         return ScanResult(digitsAtBoxes, actualDetections, readingInfo)
     }
 
@@ -170,7 +174,9 @@ class NonblockingCounterReadingScanner(
             val firstSerialId = this[0].serialId
             val serialIdIndex = serialId - firstSerialId
             if (serialIdIndex == -1) {
-                "serialIdIndex == -1. serialId=$serialId firstSerialId=$firstSerialId".log("NonblockingCounterReadingScanner")
+                "callId $callId. serialIdIndex == -1. serialId=$serialId firstSerialId=$firstSerialId".log(
+                    "NonblockingCounterReadingScanner"
+                )
             }
             return subList(serialIdIndex, lastIndex + 1)
             // return this.filter { it.serialId >= serialId }
