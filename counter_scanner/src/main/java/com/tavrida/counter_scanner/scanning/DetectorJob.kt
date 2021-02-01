@@ -6,6 +6,7 @@ import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
+import com.tavrida.utils.log
 import org.opencv.core.Mat
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
@@ -22,13 +23,15 @@ internal class DetectorJob(
 
     private fun detectorRoutine() {
         var aggrDetectionsForFrame = listOf<AggregatedDetections>()
-        var itemForDetection = input.takeLast()
+        var itemForDetection = input.waitAndTakeLast()
         while (isRunning()) {
             val detectionsForFrame =
                 detector.detect(
                     itemForDetection.detectionRoiImage,
                     itemForDetection.roiOrigin
                 ).digitsDetections
+
+            "after detector.detect".log("DetectorJob")
 
             if (isInterrupted()) { // can be interrupted during relatively long detection stage
                 break
@@ -38,7 +41,7 @@ internal class DetectorJob(
 
             //TODO: may be exec in separate loop over inputItems - because propagation to multiple frames can take some time
             //TODO: and may be exec propagation in separate thread/job
-            val frames = input.takeAll() // wait and take all items from channel
+            val frames = input.waitAndTakeAll() // wait and take all items from channel
 
             aggrDetectionsForFrame =
                 detectionTracker.track(

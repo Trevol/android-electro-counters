@@ -1,19 +1,16 @@
 package com.tavrida.counter_scanner.scanning
 
 import android.graphics.Bitmap
-import android.graphics.Point
 import android.graphics.RectF
-import android.util.Size
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.aggregation.DigitAtLocation
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.counter_scanner.utils.rgb2gray
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
-import com.tavrida.utils.tl
+import com.tavrida.utils.log
 import org.opencv.android.Utils
 import org.opencv.core.Mat
-import org.opencv.core.Rect2d
 import org.opencv.imgproc.Imgproc
 import java.io.Closeable
 import java.util.*
@@ -69,6 +66,7 @@ class NonblockingCounterReadingScanner(
 
         detectorJob.input.put(DetectorJobInputItem(serialSeq, detectionRoiImg, roiOrigin, grayMat))
         if (prevFrameItems.isEmpty()) {
+            "prevFrameItems.isEmpty()".log("NonblockingCounterReadingScanner")
             // special processing of first frame
             // no prev frame and detections to continue processing - so skipping processing
             prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
@@ -76,15 +74,17 @@ class NonblockingCounterReadingScanner(
         }
         // TODO: specify timeout here - scanner blocked for infinite time if detector job stopped
         //      unexpectedly. Or handle exceptions in detector job
-        val detectorResult = detectorJob.output.keepLast()
+        val detectorResult = detectorJob.output.keepLastOrNull()
         if (detectorResult != null) {
             val frames = prevFrameItems.bySerialId(detectorResult.serialId)
                 .map { it.gray }
                 .toMutableList()
+            "detectorResult != null. prevFrameItems(${prevFrameItems.size}) frames(${frames.size}) ".log("NonblockingCounterReadingScanner")
             frames.add(grayMat)
             actualDetections = detectionTracker.track(frames, detectorResult.detections)
             prevFrameItems.clear()
         } else {
+            "detectorResult == null. prevFrameItems(${prevFrameItems.size}".log("NonblockingCounterReadingScanner")
             val prevGray = prevFrameItems.last().gray
             actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
         }
