@@ -55,24 +55,19 @@ class NonblockingCounterReadingScanner(
         stopped = true
     }
 
-    private fun extractRoi(inputImg: Bitmap): Pair<Bitmap, Point> {
-        val (roiImage, roiRect, roiOrigin) = detectorRoi.extractImage(inputImg)
-        return roiImage to roiOrigin
-    }
-
     private fun scanQR(rgbMat: Mat) {
-        TODO()
+        //TODO()
     }
 
     fun scan(inputImg: Bitmap): ScanResult {
         ensureStarted()
 
-        val (detectionRoi, roiOrigin) = extractRoi(inputImg)
+        val (detectionRoiImg, _, roiOrigin) = detectorRoi.extractImage(inputImg)
         val (rgbMat, grayMat) = bitmapToMats.convert(inputImg)
 
         scanQR(rgbMat)
 
-        detectorJob.input.put(DetectorJobInputItem(serialSeq, detectionRoi, roiOrigin, grayMat))
+        detectorJob.input.put(DetectorJobInputItem(serialSeq, detectionRoiImg, roiOrigin, grayMat))
         if (prevFrameItems.isEmpty()) {
             // special processing of first frame
             // no prev frame and detections to continue processing - so skipping processing

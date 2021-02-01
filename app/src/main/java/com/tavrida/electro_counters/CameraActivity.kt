@@ -43,6 +43,11 @@ class CameraActivity : AppCompatActivity() {
     private val cameraImageConverter by lazy { CameraImageConverter2(this) }
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
     private val detectorRoi = DetectionRoi(Size(400, 180))
+    private val detectorRoiPaint = Paint().apply {
+        color = Color.rgb(0, 255, 0)
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+    }
 
     //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
     private val cameraRes = Size(800, 600)
@@ -160,6 +165,7 @@ class CameraActivity : AppCompatActivity() {
 
         if (started) {
             val result = counterScanner!!.scan(bitmap)
+            detectorRoi.draw(bitmap, detectorRoiPaint)
             showDetectionResults(bitmap, result, measureAnalyzeImageCall())
         } else {
             //simply show original frame
