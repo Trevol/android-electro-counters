@@ -12,7 +12,7 @@ class RectTracker {
     data class ResultRect2d(val nextBoxes: List<Rect2d>, val statuses: List<Boolean>)
     data class ResultRectF(val nextBoxes: List<RectF>, val statuses: List<Boolean>)
 
-    //TODO: avoid Rect2d. Convert to MatOfPoint directly
+    //TODO: avoid Rect2d. Convert to MatOfPoint from RectF directly
     fun track(prevImg: Mat, nextImg: Mat, prevBoxes: List<RectF>): ResultRectF {
         val prevBoxes = prevBoxes.map { it.toRect2d() }
         val (nextBoxes2d, statuses) = track(prevImg, nextImg, prevBoxes)

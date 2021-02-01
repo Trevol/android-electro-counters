@@ -2,6 +2,7 @@ package com.tavrida.electro_counters.tracking
 
 import android.graphics.RectF
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
+import com.tavrida.counter_scanner.utils.assert
 import org.opencv.core.*
 import com.tavrida.counter_scanner.utils.zip
 
@@ -40,7 +41,7 @@ class AggregatedDigitDetectionTracker {
         imageSequence: List<Mat>,
         prevDetections: List<AggregatedDetections>
     ): List<AggregatedDetections> {
-        assert(imageSequence.size >= 2)
+        (imageSequence.size >= 2).assert()
         if (prevDetections.isEmpty())
             return prevDetections
 
@@ -59,7 +60,7 @@ class AggregatedDigitDetectionTracker {
         nextImgs: List<Mat>,
         prevDetections: List<AggregatedDetections>
     ): List<AggregatedDetections> {
-        assert(nextImgs.isNotEmpty())
+        nextImgs.isNotEmpty().assert()
         if (prevDetections.isEmpty())
             return prevDetections
 
