@@ -6,6 +6,7 @@ import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.aggregation.DigitAtLocation
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
+import com.tavrida.counter_scanner.utils.assert
 import com.tavrida.counter_scanner.utils.rgb2gray
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
 import com.tavrida.utils.log
@@ -40,6 +41,8 @@ class NonblockingCounterReadingScanner(
     private val prevFrameItems = mutableListOf<SerialGrayItem>()
     private var actualDetections = listOf<AggregatedDetections>()
 
+    private var firstScan = true
+
     private fun ensureStarted() {
         if (stopped) throw IllegalStateException("Scanner is stopped")
     }
@@ -49,6 +52,7 @@ class NonblockingCounterReadingScanner(
         ensureStarted()
         detectorJob.stop()
         prevFrameItems.clear()
+        firstScan = true
         stopped = true
     }
 
@@ -57,50 +61,59 @@ class NonblockingCounterReadingScanner(
     }
 
     fun scan(inputImg: Bitmap): ScanResult {
-        ensureStarted()
+        try {
+            ensureStarted()
 
-        val (detectionRoiImg, _, roiOrigin) = detectorRoi.extractImage(inputImg)
-        val (rgbMat, grayMat) = bitmapToMats.convert(inputImg)
+            if (prevFrameItems.size > MAX_QUEUE_SIZE) {
+                stop()
+                throw IllegalStateException("Stopping. prevFrameItems.size > MAX_QUEUE_SIZE")
+            }
 
-        scanQR(rgbMat)
+            val (detectionRoiImg, _, roiOrigin) = detectorRoi.extractImage(inputImg)
+            val (rgbMat, grayMat) = bitmapToMats.convert(inputImg)
 
-        detectorJob.input.put(DetectorJobInputItem(serialSeq, detectionRoiImg, roiOrigin, grayMat))
-        if (prevFrameItems.isEmpty()) {
-            "prevFrameItems.isEmpty()".log("NonblockingCounterReadingScanner")
-            // special processing of first frame
-            // no prev frame and detections to continue processing - so skipping processing
+            scanQR(rgbMat)
+
+            detectorJob.input.put(
+                DetectorJobInputItem(
+                    serialSeq,
+                    detectionRoiImg,
+                    roiOrigin,
+                    grayMat
+                )
+            )
+
             prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
+
+            if (firstScan) { // special processing of first frame - no prev frame and no detections yet
+                firstScan = false
+                return noDetections()
+            }
+
+            val detectorResult = detectorJob.output.keepLastOrNull()
+            if (detectorResult != null) {
+                val frames = prevFrameItems.bySerialId(detectorResult.serialId)
+                    .map { it.gray }
+                (frames.isNotEmpty()).assert("frames.isNotEmpty()")
+                actualDetections = if (frames.size == 1) {
+                    detectorResult.detections
+                } else {
+                    detectionTracker.track(frames, detectorResult.detections)
+                }
+                prevFrameItems.clearBeforeLast()
+            } else {
+                (prevFrameItems.size >= 2).assert()
+                val prevGray = prevFrameItems.get2(-2).gray // grayMat is last item
+                actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
+            }
+
+            val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
+            val readingInfo = readingInfo(digitsAtBoxes)
+            return ScanResult(digitsAtBoxes, actualDetections, readingInfo)
+        } finally {
+            serialSeq++
             callId++
-            return noDetections()
         }
-        // TODO: specify timeout here - scanner blocked for infinite time if detector job stopped
-        //      unexpectedly. Or handle exceptions in detector job
-        val detectorResult = detectorJob.output.keepLastOrNull()
-        if (detectorResult != null) {
-            val frames = prevFrameItems.bySerialId(detectorResult.serialId)
-                .map { it.gray }
-                .toMutableList()
-            "callId $callId. detectorResult != null. serialId: ${detectorResult.serialId}. prevFrameItems(${prevFrameItems.map { it.serialId }}) frames(${frames.size}) "
-                .log("NonblockingCounterReadingScanner")
-            frames.add(grayMat)
-            actualDetections = detectionTracker.track(frames, detectorResult.detections)
-            prevFrameItems.clear()
-        } else {
-            "callId $callId. detectorResult == null. prevFrameItems(${prevFrameItems.map { it.serialId }}"
-                .log("NonblockingCounterReadingScanner")
-            val prevGray = prevFrameItems.last().gray
-            actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
-        }
-
-        prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
-        "callId $callId. prevFrameItems.add. prevFrameItems(${prevFrameItems.map { it.serialId }})"
-            .log("NonblockingCounterReadingScanner")
-        serialSeq++
-
-        val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
-        val readingInfo = readingInfo(digitsAtBoxes)
-        callId++
-        return ScanResult(digitsAtBoxes, actualDetections, readingInfo)
     }
 
     var prevReading = ""
@@ -122,7 +135,23 @@ class NonblockingCounterReadingScanner(
     }
 
     private companion object {
+        const val MAX_QUEUE_SIZE = 100
         var callId = 0
+
+        private fun List<SerialGrayItem>.bySerialId(serialId: Int): List<SerialGrayItem> {
+            val firstSerialId = this[0].serialId
+            val serialIdIndex = clip(0, serialId - firstSerialId)
+            return subList(serialIdIndex, lastIndex + 1)
+            // return this.filter { it.serialId >= serialId }
+        }
+
+        private inline fun clip(low: Int, value: Int) =
+            if (value < low) {
+                low
+            } else {
+                value
+            }
+
         private fun List<DigitAtLocation>.toReading(): String {
             return sortedBy { it.location.left }
                 .removeVerticalDigits()
@@ -170,17 +199,21 @@ class NonblockingCounterReadingScanner(
 
         fun noDetections() = ScanResult(listOf(), listOf(), null)
 
-        private fun List<SerialGrayItem>.bySerialId(serialId: Int): List<SerialGrayItem> {
-            val firstSerialId = this[0].serialId
-            val serialIdIndex = serialId - firstSerialId
-            if (serialIdIndex == -1) {
-                "callId $callId. serialIdIndex == -1. serialId=$serialId firstSerialId=$firstSerialId".log(
-                    "NonblockingCounterReadingScanner"
-                )
+        fun <E> MutableList<E>.clearBeforeLast() {
+            if (size > 1) {
+                val lastItem = last()
+                clear()
+                add(lastItem)
             }
-            return subList(serialIdIndex, lastIndex + 1)
-            // return this.filter { it.serialId >= serialId }
         }
+
+        fun <E> List<E>.get2(index: Int) =
+            if (index >= 0) {
+                get(index)
+            } else {
+                //-1 should be last item (with lastIndex)
+                get(lastIndex + 1 + index)
+            }
     }
 }
 

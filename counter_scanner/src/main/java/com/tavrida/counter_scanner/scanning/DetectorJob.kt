@@ -31,8 +31,6 @@ internal class DetectorJob(
                     itemForDetection.roiOrigin
                 ).digitsDetections
 
-            "after detector.detect. serialId: ${itemForDetection.serialId}. ${detectionsForFrame.size}".log("DetectorJob")
-
             if (isInterrupted()) { // can be interrupted during relatively long detection stage
                 break
             }
