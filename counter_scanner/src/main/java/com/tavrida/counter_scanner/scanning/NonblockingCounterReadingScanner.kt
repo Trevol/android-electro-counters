@@ -9,7 +9,6 @@ import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.counter_scanner.utils.assert
 import com.tavrida.counter_scanner.utils.rgb2gray
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
-import com.tavrida.utils.log
 import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc

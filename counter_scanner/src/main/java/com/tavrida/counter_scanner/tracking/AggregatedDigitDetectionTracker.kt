@@ -3,8 +3,8 @@ package com.tavrida.electro_counters.tracking
 import android.graphics.RectF
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.utils.assert
-import org.opencv.core.*
 import com.tavrida.counter_scanner.utils.zip
+import org.opencv.core.Mat
 
 class AggregatedDigitDetectionTracker {
     private val tracker = RectTracker()

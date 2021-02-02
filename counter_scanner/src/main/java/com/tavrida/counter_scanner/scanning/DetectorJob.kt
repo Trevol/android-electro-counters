@@ -6,7 +6,6 @@ import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
-import com.tavrida.utils.log
 import org.opencv.core.Mat
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
