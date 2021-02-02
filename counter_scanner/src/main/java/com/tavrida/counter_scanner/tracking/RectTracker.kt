@@ -9,10 +9,7 @@ import org.opencv.utils.Converters
 import org.opencv.video.SparsePyrLKOpticalFlow
 
 class RectTracker {
-
     data class TrackResult(val nextBoxes: List<RectF>, val statuses: List<Boolean>)
-
-    //TODO: avoid Rect2d. Convert to MatOfPoint from RectF directly
 
     fun track(prevImg: Mat, nextImg: Mat, prevBoxes: List<RectF>): TrackResult {
         if (prevBoxes.isEmpty()) {
