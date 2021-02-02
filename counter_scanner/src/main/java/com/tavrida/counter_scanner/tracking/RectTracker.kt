@@ -46,7 +46,7 @@ class RectTracker {
         return ResultRect2d(nextBoxes, statuses)
     }
 
-    fun trackPoints(
+    private fun trackPoints(
         prevImg: Mat,
         nextImg: Mat,
         prevPts: List<Point>
