@@ -1,28 +1,22 @@
 package com.tavrida.electro_counters.tracking
 
 import android.graphics.RectF
-import androidx.core.graphics.toRect
-import com.tavrida.utils.toRect2d
-import com.tavrida.utils.toRectF
-import org.opencv.core.*
+import org.opencv.core.Mat
+import org.opencv.core.MatOfByte
+import org.opencv.core.MatOfPoint2f
+import org.opencv.core.Point
 import org.opencv.utils.Converters
 import org.opencv.video.SparsePyrLKOpticalFlow
 
 class RectTracker {
-    data class ResultRect2d(val nextBoxes: List<Rect2d>, val statuses: List<Boolean>)
-    data class ResultRectF(val nextBoxes: List<RectF>, val statuses: List<Boolean>)
+
+    data class TrackResult(val nextBoxes: List<RectF>, val statuses: List<Boolean>)
 
     //TODO: avoid Rect2d. Convert to MatOfPoint from RectF directly
-    fun track(prevImg: Mat, nextImg: Mat, prevBoxes: List<RectF>): ResultRectF {
-        val prevBoxes = prevBoxes.map { it.toRect2d() }
-        val (nextBoxes2d, statuses) = track(prevImg, nextImg, prevBoxes)
-        val nextBoxes = nextBoxes2d.map { it.toRectF() }
-        return ResultRectF(nextBoxes, statuses)
-    }
 
-    fun track(prevImg: Mat, nextImg: Mat, prevBoxes: List<Rect2d>): ResultRect2d {
+    fun track(prevImg: Mat, nextImg: Mat, prevBoxes: List<RectF>): TrackResult {
         if (prevBoxes.isEmpty()) {
-            return ResultRect2d(listOf(), listOf())
+            return TrackResult(listOf(), listOf())
         }
         val prevPts = prevBoxes.toTrackedPts()
         val (nextPts, nextPtsStatuses) = trackPoints(prevImg, nextImg, prevPts)
@@ -30,7 +24,7 @@ class RectTracker {
         val nextPtsIter = nextPts.iterator()
         val statusesIter = nextPtsStatuses.iterator()
 
-        val nextBoxes = mutableListOf<Rect2d>()
+        val nextBoxes = mutableListOf<RectF>()
         val statuses = mutableListOf<Boolean>()
         while (nextPtsIter.hasNext()) {
             val tl = nextPtsIter.next()
@@ -38,12 +32,12 @@ class RectTracker {
             val tlStatus = statusesIter.next()
             val brStatus = statusesIter.next()
 
-            nextBoxes.add(Rect2d(tl, br))
+            nextBoxes.add(RectF(tl, br))
             val pointsInRightOrder = tl.x < br.x && tl.y < br.y
             statuses.add(pointsInRightOrder && tlStatus == statusOk && brStatus == statusOk)
         }
 
-        return ResultRect2d(nextBoxes, statuses)
+        return TrackResult(nextBoxes, statuses)
     }
 
     private fun trackPoints(
@@ -67,7 +61,7 @@ class RectTracker {
 
         val statusOk: Byte = 1
 
-        fun List<Rect2d>.toTrackedPts(): List<Point> {
+        fun List<RectF>.toTrackedPts(): List<Point> {
             val pts = mutableListOf<Point>()
             for (box in this) {
                 pts.add(box.tl())
@@ -75,5 +69,12 @@ class RectTracker {
             }
             return pts
         }
+
+        private inline fun RectF.tl() = Point(left, top)
+        private inline fun RectF.br() = Point(right, bottom)
+        private inline fun Point(x: Float, y: Float) = Point(x.toDouble(), y.toDouble())
+        private inline fun RectF(tl: Point, br: Point) = RectF(tl.x, tl.y, br.x, br.y)
+        private inline fun RectF(left: Double, top: Double, right: Double, bottom: Double) =
+            RectF(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
     }
 }
