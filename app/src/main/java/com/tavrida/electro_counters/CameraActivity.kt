@@ -50,7 +50,8 @@ class CameraActivity : AppCompatActivity() {
     }
 
     //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
-    private val cameraRes = Size(800, 600)
+    // private val cameraRes = Size(800, 600)
+    private val cameraRes = Size(640, 480)
 
     var counterScanner: NonblockingCounterReadingScanner? = null
 
@@ -118,6 +119,8 @@ class CameraActivity : AppCompatActivity() {
         buttonStartStop.setBackgroundResource(r)
         textView_timings.visibility = if (stopped) View.INVISIBLE else View.VISIBLE
         textView_timings.text = ""
+        textView_readings.visibility = if (stopped) View.INVISIBLE else View.VISIBLE
+        textView_readings.text = ""
     }
 
     private fun bindCameraUseCases() = imageView_preview.post {
@@ -183,40 +186,18 @@ class CameraActivity : AppCompatActivity() {
         scanResult: NonblockingCounterReadingScanner.ScanResult,
         duration: Long
     ) {
+        if (stopped) {
+            return
+        }
         val timingTxt = "${duration}ms"
-        // Log.d(TAG, "Process frame in $timingTxt")
 
-        // val screenImage = inputBitmap.roi(detectionResult.screenBox)
-        // val (inputBitmapWithDrawing, screenImageWithDrawing, digitsDetectionBitmap) = detectionDrawer.drawDetectionResults(
-        //     inputBitmap.copy(),
-        //     screenImage,
-        //     scanResult
-        // )
-
-
-        /*detectionLogger.log(
-            scanResult,
-            inputBitmap,
-            inputBitmapWithDrawing,
-            screenImageWithDrawing,
-            digitsDetectionBitmap,
-            duration
-        )*/
         val readings = scanResult.readingInfo?.reading
         val imageWithDrawings = ScanResultDrawer().draw(inputBitmap.copy(), scanResult)
         imageView_preview.post {
             textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
             imageView_preview.setImageBitmap(imageWithDrawings)
 
-            if (readings != null && readings.isNotEmpty()) {
-                textView_readings.visibility = View.VISIBLE
-                textView_readings.text = readings
-                /*println("readings: $readings\n")
-                println(scanResult.digitsAtBoxes)
-                println("--------------------------------")*/
-            } else {
-                textView_readings.visibility = View.INVISIBLE
-            }
+            textView_readings.text = if (readings.isNullOrEmpty()) "" else readings
         }
     }
 

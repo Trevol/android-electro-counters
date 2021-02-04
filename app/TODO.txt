@@ -1,3 +1,21 @@
+- QR
+  + simple app (Kotlin) for visualize localized QR
+  + отдельное приложение для локализации/расшифровки QR
+  - распечатать неск. QR кодов
+  - интегрировать считывание в основное приложение
+      - рисовать локализацию
+      - отображать в текстовом поле значение
+  -
+  - /home/trevol/Repos/Android/mlkit/android/vision-quickstart
+- skip detection near ROI edges
+- how to validate tracked detections
+   - т.к. появляются некорректные box-ы. Видимо "уплывают/перепрыгивают" точки при трекинге
+     - м.б. определять "уплывшие" точки, сравнивая
+   - "устаревание" треков/обнаружений?
+   - KCF трекер?
+   - SORT-трекер
+
+
 - QR code scanning
    - google "zbar android"
    - https://www.pyimagesearch.com/2018/05/21/an-opencv-barcode-and-qr-code-scanner-with-zbar/
@@ -14,13 +32,9 @@
 - align consecutive frames to compensate camera motion
    - https://www.learnopencv.com/image-alignment-feature-based-using-opencv-c-python/
    - https://www.learnopencv.com/homography-examples-using-opencv-python-c/
-- compare timings for
-    - bitmap rotation (using Matrix)
-    - opencv rotate(rotationCode)
 - implement 90/180/270 degree rotation using vertical/horizontal flip (may be faster then using arbitrary rotation matrix)
     https://acomputerengineer.com/2016/06/07/flip-imagebitmap-horizontally-and-vertically-in-android/
     https://stackoverflow.com/questions/36493977/flip-a-bitmap-image-horizontally-or-vertically
-- direct convertion
 - try implement
    - https://towardsdatascience.com/real-time-mobile-video-object-detection-using-tensorflow-a75fa0c5859d
    - https://medium.com/tensorflow/training-and-serving-a-realtime-mobile-object-detector-in-30-minutes-with-cloud-tpus-b78971cf1193

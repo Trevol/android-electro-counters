@@ -2,6 +2,10 @@ package com.tavrida.counter_scanner.scanning
 
 import android.graphics.Bitmap
 import android.graphics.RectF
+import com.google.mlkit.vision.barcode.Barcode
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.common.InputImage
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.aggregation.DigitAtLocation
@@ -27,6 +31,8 @@ class NonblockingCounterReadingScanner(
         val aggregatedDetections: List<AggregatedDetections>,
         val readingInfo: ReadingInfo?
     ) {
+        constructor() : this(listOf(), listOf(), null)
+
         data class ReadingInfo(val reading: String, val millisecondsOfStability: Long)
     }
 
@@ -55,11 +61,22 @@ class NonblockingCounterReadingScanner(
         stopped = true
     }
 
+    private object scanner {
+        private val instance = BarcodeScanning.getClient(
+            BarcodeScannerOptions.Builder()
+                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
+                .build()
+        )
+
+        fun process(image: Bitmap) = instance.process(InputImage.fromBitmap(image, 0))
+    }
+
     private fun scanQR(rgbMat: Mat) {
         //TODO()
     }
 
     fun scan(inputImg: Bitmap): ScanResult {
+        //TODO: can be stopped (with clearing state) from other thread (UI-thread) during processing
         try {
             ensureStarted()
 
@@ -71,7 +88,15 @@ class NonblockingCounterReadingScanner(
             val (detectionRoiImg, _, roiOrigin) = detectorRoi.extractImage(inputImg)
             val (rgbMat, grayMat) = bitmapToMats.convert(inputImg)
 
+            if (stopped){
+                return ScanResult()
+            }
+
             scanQR(rgbMat)
+
+            if (stopped){
+                return ScanResult()
+            }
 
             detectorJob.input.put(
                 DetectorJobInputItem(
@@ -82,6 +107,10 @@ class NonblockingCounterReadingScanner(
                 )
             )
 
+            if (stopped){
+                return ScanResult()
+            }
+
             prevFrameItems.add(SerialGrayItem(serialSeq, grayMat))
 
             if (firstScan) { // special processing of first frame - no prev frame and no detections yet
@@ -90,9 +119,17 @@ class NonblockingCounterReadingScanner(
             }
 
             val detectorResult = detectorJob.output.keepLastOrNull()
+
+            if (stopped){
+                return ScanResult()
+            }
+
             if (detectorResult != null) {
                 val frames = prevFrameItems.bySerialId(detectorResult.serialId)
                     .map { it.gray }
+                if (stopped){
+                    return ScanResult()
+                }
                 (frames.isNotEmpty()).assert("frames.isNotEmpty()")
                 actualDetections = if (frames.size == 1) {
                     detectorResult.detections
@@ -100,7 +137,13 @@ class NonblockingCounterReadingScanner(
                     detectionTracker.track(frames, detectorResult.detections)
                 }
                 prevFrameItems.clearBeforeLast()
+                if (stopped){
+                    return ScanResult()
+                }
             } else {
+                if (stopped){
+                    return ScanResult()
+                }
                 (prevFrameItems.size >= 2).assert()
                 val prevGray = prevFrameItems.get2(-2).gray // grayMat is last item
                 actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
@@ -111,7 +154,6 @@ class NonblockingCounterReadingScanner(
             return ScanResult(digitsAtBoxes, actualDetections, readingInfo)
         } finally {
             serialSeq++
-            callId++
         }
     }
 
@@ -135,7 +177,6 @@ class NonblockingCounterReadingScanner(
 
     private companion object {
         const val MAX_QUEUE_SIZE = 100
-        var callId = 0
 
         private fun List<SerialGrayItem>.bySerialId(serialId: Int): List<SerialGrayItem> {
             val firstSerialId = this[0].serialId
