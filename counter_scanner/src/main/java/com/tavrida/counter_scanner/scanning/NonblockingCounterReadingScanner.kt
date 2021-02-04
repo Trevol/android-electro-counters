@@ -61,15 +61,7 @@ class NonblockingCounterReadingScanner(
         stopped = true
     }
 
-    private object scanner {
-        private val instance = BarcodeScanning.getClient(
-            BarcodeScannerOptions.Builder()
-                .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
-                .build()
-        )
 
-        fun process(image: Bitmap) = instance.process(InputImage.fromBitmap(image, 0))
-    }
 
     private fun scanQR(rgbMat: Mat) {
         //TODO()
