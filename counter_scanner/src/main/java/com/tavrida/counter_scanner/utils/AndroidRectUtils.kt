@@ -12,6 +12,9 @@ import kotlin.math.min
 val RectF.x inline get() = left
 val RectF.y inline get() = top
 
+fun RectF(left: Int, top: Int, right: Int, bottom: Int) =
+    RectF(left.toFloat(), top.toFloat(), right.toFloat(), bottom.toFloat())
+
 fun RectF.toRect2d() = Rect2d(x, y, width(), height())
 
 fun Rect2d.toRectF() = RectF(

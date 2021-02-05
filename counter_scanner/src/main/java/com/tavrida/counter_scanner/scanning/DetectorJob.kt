@@ -2,12 +2,14 @@ package com.tavrida.counter_scanner.scanning
 
 import android.graphics.Bitmap
 import android.graphics.Point
+import android.graphics.RectF
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.detection.DigitDetectionResult
 import com.tavrida.counter_scanner.detection.ScreenDigitDetectionResult
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
+import com.tavrida.utils.RectF
 import org.opencv.core.Mat
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
@@ -26,16 +28,25 @@ internal class DetectorJob(
 
     private fun postprocessDigitDetections(
         detectionRoiImage: Bitmap,
+        roiOrigin: Point,
         detectionResult: ScreenDigitDetectionResult
     ): List<DigitDetectionResult> {
         var digitsDetections = detectionResult.digitsDetections
         if (skipDigitsOutsideScreen) {
             val screenDetection = detectionResult.screenDetection ?: return listOf()
-            digitsDetections = detectionResult.digitsDetections
+            digitsDetections = digitsDetections
                 .filter { screenDetection.location.contains(it.location) }
         }
-        if (skipDigitsNearImageEdges){
-            TODO()
+        if (skipDigitsNearImageEdges) {
+            digitsDetections = digitsDetections
+                .filter {
+                    it.location.insidePadding(
+                        detectionRoiImage.width,
+                        detectionRoiImage.height,
+                        roiOrigin,
+                        10
+                    )
+                }
         }
 
         return digitsDetections
@@ -50,7 +61,11 @@ internal class DetectorJob(
                 itemForDetection.detectionRoiImage,
                 itemForDetection.roiOrigin
             ).let {
-                postprocessDigitDetections(itemForDetection.detectionRoiImage, it)
+                postprocessDigitDetections(
+                    itemForDetection.detectionRoiImage,
+                    itemForDetection.roiOrigin,
+                    it
+                )
             }
 
             if (isInterrupted()) { // can be interrupted during relatively long detection stage
@@ -96,6 +111,19 @@ internal class DetectorJob(
     private companion object {
         private inline fun isRunning() = !isInterrupted()
         private inline fun isInterrupted() = Thread.currentThread().isInterrupted
+        private fun RectF.insidePadding(
+            imageWidth: Int,
+            imageHeight: Int,
+            roiOrigin: Point,
+            padding: Int
+        ): Boolean {
+            val imgRect = RectF(
+                roiOrigin.x + padding, roiOrigin.y + padding,
+                roiOrigin.x + imageWidth - padding,
+                roiOrigin.y + imageHeight - padding
+            )
+            return imgRect.contains(this)
+        }
     }
 }
 
