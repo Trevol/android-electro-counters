@@ -44,12 +44,28 @@
             android:id="@+id/textView_readings"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="10dp"
+            android:background="#999"
+            android:text="12345"
             android:textColor="@android:color/holo_green_light"
             android:textSize="14pt"
-            android:background="#999"
-            android:visibility="gone"
+            android:visibility="visible"
             app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/textView_clientId"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="10dp"
+            android:background="#999"
+            android:text="12345"
+            android:textColor="@android:color/holo_green_light"
+            android:textSize="14pt"
+            android:visibility="visible"
+            app:layout_constraintRight_toLeftOf="@id/textView_readings"
             app:layout_constraintTop_toTopOf="parent" />
 
         <ImageButton
