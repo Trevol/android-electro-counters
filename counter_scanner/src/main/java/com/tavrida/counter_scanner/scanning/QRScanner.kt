@@ -1,12 +1,15 @@
 package com.tavrida.counter_scanner.scanning
 
 import android.graphics.Bitmap
+import com.google.android.gms.tasks.Task
 import com.google.mlkit.vision.barcode.Barcode
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.common.InputImage
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
+import com.tavrida.utils.copy
+import java.lang.Exception
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class QRScanner(private val processNthImage: Int) {
     private enum class State { PROCESSING, IDLE }
@@ -21,26 +24,50 @@ class QRScanner(private val processNthImage: Int) {
         fun process(image: Bitmap) = instance.process(InputImage.fromBitmap(image, 0))
     }
 
-    private val state = AtomicReference(State.IDLE)
-    private val imgCounter = AtomicInteger(0)
-    private val barcodes = AtomicReference(listOf<Barcode>())
+    private var state = State.IDLE
+    private var imgCounter = 0
+    private var barcodes = listOf<Barcode>()
+    private var exception: Exception? = null
 
     //TODO: может просто блокировать критической секцией? Вместо набора atomic-значений?
+    private val lock = ReentrantLock()
 
-    fun postProcess(image: Bitmap): List<Barcode>? {
-        if (state.get() == State.PROCESSING) {
-            return barcodes.get()
+    fun postProcess(image: Bitmap, copyImageForProcessing: Boolean = true): List<Barcode> {
+        return lock.withLock {
+            if (state == State.IDLE) {
+                val readyToProcess = imgCounter >= processNthImage
+                imgCounter++
+                if (readyToProcess) {
+                    scanner.process(acquireImage(image, copyImageForProcessing))
+                        .addOnSuccessListener { barcodes -> this.barcodes = barcodes }
+                        .addOnFailureListener { }
+                        .addOnCompleteListener { processingComplete(it) }
+                    state = State.PROCESSING
+                    imgCounter = 0
+                }
+            }
+            barcodes
         }
-        //IDLE state
-        val readyToProcess = imgCounter.getAndIncrement() % processNthImage == 0
-        if (readyToProcess) {
-            scanner.process(image)
-                .addOnSuccessListener { barcodes -> this.barcodes.set(barcodes) }
-                .addOnFailureListener { }
-                .addOnCompleteListener { state.set(State.IDLE) }
-            state.set(State.PROCESSING)
+    }
+
+    private fun acquireImage(image: Bitmap, copyImageForProcessing: Boolean) =
+        if (copyImageForProcessing) {
+            image.copy(isMutable = false)
+        } else {
+            image
         }
-        return barcodes.get()
+
+    fun barcodes() = lock.withLock { barcodes }
+
+    private fun processingComplete(task: Task<MutableList<Barcode>>) {
+        lock.withLock {
+            if (task.exception != null) {
+                exception = task.exception
+            } else {
+                barcodes = task.result
+            }
+            state = State.IDLE
+        }
     }
 
 }

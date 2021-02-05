@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Point
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
+import com.tavrida.counter_scanner.detection.DigitDetectionResult
+import com.tavrida.counter_scanner.detection.ScreenDigitDetectionResult
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
 import org.opencv.core.Mat
@@ -13,28 +15,49 @@ import kotlin.concurrent.thread
 internal class DetectorJob(
     private val detector: ScreenDigitDetector,
     private val detectionTracker: AggregatedDigitDetectionTracker,
-    private val digitExtractor: AggregatingBoxGroupingDigitExtractor
+    private val digitExtractor: AggregatingBoxGroupingDigitExtractor,
+    val skipDigitsOutsideScreen: Boolean,
+    val skipDigitsNearImageEdges: Boolean,
 ) {
     val input = LinkedBlockingQueue<DetectorJobInputItem>()
     val output = LinkedBlockingQueue<DetectorJobOutputItem>()
 
     private val jobThread = startJobThread()
 
+    private fun postprocessDigitDetections(
+        detectionRoiImage: Bitmap,
+        detectionResult: ScreenDigitDetectionResult
+    ): List<DigitDetectionResult> {
+        var digitsDetections = detectionResult.digitsDetections
+        if (skipDigitsOutsideScreen) {
+            val screenDetection = detectionResult.screenDetection ?: return listOf()
+            digitsDetections = detectionResult.digitsDetections
+                .filter { screenDetection.location.contains(it.location) }
+        }
+        if (skipDigitsNearImageEdges){
+            TODO()
+        }
+
+        return digitsDetections
+    }
+
     private fun detectorRoutine() {
         var aggrDetectionsForFrame = listOf<AggregatedDetections>()
         var itemForDetection = input.waitAndTakeLast()
         while (isRunning()) {
-            val detectionsForFrame =
-                detector.detect(
-                    itemForDetection.detectionRoiImage,
-                    itemForDetection.roiOrigin
-                ).digitsDetections
+
+            val digitsDetections = detector.detect(
+                itemForDetection.detectionRoiImage,
+                itemForDetection.roiOrigin
+            ).let {
+                postprocessDigitDetections(itemForDetection.detectionRoiImage, it)
+            }
 
             if (isInterrupted()) { // can be interrupted during relatively long detection stage
                 break
             }
             aggrDetectionsForFrame =
-                digitExtractor.aggregateDetections(detectionsForFrame, aggrDetectionsForFrame)
+                digitExtractor.aggregateDetections(digitsDetections, aggrDetectionsForFrame)
 
             //TODO: may be exec in separate loop over inputItems - because propagation to multiple frames can take some time
             //TODO: and may be exec propagation in separate thread/job

@@ -8,6 +8,10 @@
   -
   - /home/trevol/Repos/Android/mlkit/android/vision-quickstart
 - skip detection near ROI edges
+- skip detections outside of screen
+- train with negative images
+   - hard negative mining from annotated images
+   - with QR code  (current detector detect digits in QR codes)
 - how to validate tracked detections
    - т.к. появляются некорректные box-ы. Видимо "уплывают/перепрыгивают" точки при трекинге
      - м.б. определять "уплывшие" точки, сравнивая

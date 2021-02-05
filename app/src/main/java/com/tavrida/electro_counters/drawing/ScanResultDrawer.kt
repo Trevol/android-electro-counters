@@ -21,6 +21,13 @@ class ScanResultDrawer {
                 strokeWidth = 1f
                 textSize = 24f
             })
+
+        private val barckodeMarkPaint = Paint().apply {
+            color = Color.argb(255, 0, 255, 0)
+            style = Paint.Style.FILL_AND_STROKE
+            strokeWidth = 1f
+        }
+        private const val barcodeMarkRadius = 5f
     }
 
     fun draw(
@@ -34,6 +41,15 @@ class ScanResultDrawer {
             val text = d.digit.toString()
             digitPaintManager.setTextSizeForHeight(d.location.height() - 4, text)
             canvas.drawText(text, d.location.left + 2, d.location.top - 2, digitPaintManager.paint)
+        }
+        for (barcode in scanResult.barcodes) {
+            val box = barcode.boundingBox!!
+            canvas.drawCircle(
+                box.exactCenterX(),
+                box.exactCenterY(),
+                barcodeMarkRadius,
+                barckodeMarkPaint
+            )
         }
         return inputBitmap
     }

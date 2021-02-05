@@ -189,11 +189,11 @@ class CameraActivity : AppCompatActivity() {
         if (stopped) {
             return
         }
-        val timingTxt = "${duration}ms"
-
-        val readings = scanResult.readingInfo?.reading
-        val imageWithDrawings = ScanResultDrawer().draw(inputBitmap.copy(), scanResult)
         imageView_preview.post {
+            val timingTxt = "${duration}ms"
+
+            val readings = scanResult.readingInfo?.reading
+            val imageWithDrawings = ScanResultDrawer().draw(inputBitmap.copy(), scanResult)
             textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
             imageView_preview.setImageBitmap(imageWithDrawings)
 
