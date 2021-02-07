@@ -23,11 +23,11 @@ class ScanResultDrawer {
             })
 
         private val barckodeMarkPaint = Paint().apply {
-            color = Color.argb(255, 0, 255, 0)
+            color = Color.argb(200, 0, 255, 0)
             style = Paint.Style.FILL_AND_STROKE
             strokeWidth = 1f
         }
-        private const val barcodeMarkRadius = 5f
+        private const val BARCODE_MARK_R = 10f
     }
 
     fun draw(
@@ -47,7 +47,7 @@ class ScanResultDrawer {
             canvas.drawCircle(
                 box.exactCenterX(),
                 box.exactCenterY(),
-                barcodeMarkRadius,
+                BARCODE_MARK_R,
                 barckodeMarkPaint
             )
         }

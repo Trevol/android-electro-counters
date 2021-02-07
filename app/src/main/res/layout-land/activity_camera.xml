@@ -63,7 +63,7 @@
             android:layout_marginTop="10dp"
             android:textColor="@android:color/holo_green_light"
             android:textSize="14pt"
-            android:text="clientId"
+            android:text=""
             android:background="#999"
             android:visibility="visible"
             app:layout_constraintRight_toLeftOf="@id/textView_readings"

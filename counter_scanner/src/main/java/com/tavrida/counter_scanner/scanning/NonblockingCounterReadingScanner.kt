@@ -28,9 +28,10 @@ class NonblockingCounterReadingScanner(
         val digitsAtLocations: List<DigitAtLocation>,
         val aggregatedDetections: List<AggregatedDetections>,
         val readingInfo: ReadingInfo?,
-        val barcodes: List<Barcode>
+        val barcodes: List<Barcode>,
+        val clientId: String,
     ) {
-        constructor() : this(listOf(), listOf(), null, listOf())
+        constructor() : this(listOf(), listOf(), null, listOf(), "")
 
         data class ReadingInfo(val reading: String, val millisecondsOfStability: Long)
     }
@@ -126,10 +127,22 @@ class NonblockingCounterReadingScanner(
 
             val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
             val readingInfo = readingInfo(digitsAtBoxes)
-            return ScanResult(digitsAtBoxes, actualDetections, readingInfo, qrScanner.barcodes())
+            return ScanResult(
+                digitsAtBoxes,
+                actualDetections,
+                readingInfo,
+                qrScanner.barcodes(),
+                getClientId(qrScanner.barcodes())
+            )
         } finally {
             serialSeq++
         }
+    }
+
+    private fun getClientId(barcodes: List<Barcode>): String {
+        //TODO: use barcode closest to screen
+        //TODO: remember
+        return if (barcodes.isNotEmpty()) barcodes[0].rawValue else ""
     }
 
     var prevReading = ""
