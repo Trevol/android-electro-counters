@@ -7,15 +7,12 @@ import com.tavrida.utils.padStartEx
 import com.tavrida.utils.saveAsJpeg
 import com.tavrida.utils.zeroPad
 import java.io.File
+import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
 
-class FramesStorage(val storageDir: File) {
-    private val framesDir = File(storageDir, "frames")
-
-    init {
-        framesDir.mkdirs()
-    }
+class FramesStorage(storageDir: File, subDir: String = "frames") {
+    private val framesDir = File(storageDir, subDir)
 
     private var framesPos = 0
     private var sessionId = ""
@@ -31,7 +28,7 @@ class FramesStorage(val storageDir: File) {
 
     private fun startSession() {
         (!started).assert()
-        storageDir.mkdirs()
+        framesDir.mkdirs()
         sessionId = createTimestamp()
         started = true
     }
@@ -45,13 +42,22 @@ class FramesStorage(val storageDir: File) {
 
     fun addFrame(frame: Bitmap) {
         started.assert()
-        val paddedPos = framesPos.zeroPad(4)
-        val fileName = "${sessionId}_${paddedPos}.jpg"
-        frame.saveAsJpeg(File(storageDir, fileName))
+
+        framesPos.zeroPad(5)
+            .let { paddedPos ->
+                "${sessionId}_${paddedPos}.jpg"
+            }
+            .let { fn ->
+                File(framesDir, fn)
+            }.also { f ->
+                frame.saveAsJpeg(f, JPEG_QUALITY)
+            }
+
         framesPos++
     }
 
     private companion object {
+        private const val JPEG_QUALITY = 75
         private const val TIMESTAMP_FORMAT = "yyyyMMddHHmmss"
         private fun createTimestamp() =
             SimpleDateFormat(TIMESTAMP_FORMAT, Locale.US).format(System.currentTimeMillis())
@@ -62,23 +68,22 @@ class FramesStorage(val storageDir: File) {
 data class CreateExternalStorageDirResult(val externalDir: File?, val errorReason: String?)
 
 fun createExternalStorageDir(dirName: String): CreateExternalStorageDirResult {
-    if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED) {
-        return CreateExternalStorageDirResult(
-            null,
-            "ExternalStorage unavailable: ${Environment.getExternalStorageState()}"
-        )
-    }
-    val extDir = File(Environment.getExternalStorageDirectory(), dirName)
-    if (extDir.exists()) {
-        //TODO: check access by creating and deleting file
-        val file = File(extDir, "test.txt")
-        file.createNewFile()
-        // file.delete()
+    try {
+        if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED) {
+            return CreateExternalStorageDirResult(
+                null,
+                "ExternalStorage unavailable: ${Environment.getExternalStorageState()}"
+            )
+        }
+        val extDir = File(Environment.getExternalStorageDirectory(), dirName)
+        extDir.mkdir()
+        File(extDir, "test.txt").apply {
+            //TODO: check access by creating and deleting file
+            createNewFile()
+            delete()
+        }
         return CreateExternalStorageDirResult(extDir, "")
+    } catch (e: Exception) {
+        return CreateExternalStorageDirResult(null, e.message)
     }
-    val mkdirResult = extDir.mkdir()
-    if (!mkdirResult) {
-        return CreateExternalStorageDirResult(null, "${extDir.absolutePath} did not created")
-    }
-    return CreateExternalStorageDirResult(extDir, "")
 }

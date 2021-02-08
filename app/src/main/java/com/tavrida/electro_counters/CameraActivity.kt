@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
+import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -55,15 +56,16 @@ class CameraActivity : AppCompatActivity() {
     private fun prepareFramesStorage() {
         (framesStorage == null).assert()
         //try to external storage
-        val (storageDir, _) = createExternalStorageDir("tavrida-electro-counters")
+        val (storageDir, _) = createExternalStorageDir(STORAGE_DIR)
         if (storageDir != null) {
             framesStorage = FramesStorage(storageDir)
-        }else{
-            //fallback to internal files storage
+        } else { // fallback to internal files storage
             framesStorage = FramesStorage(filesDir)
         }
 
     }
+
+    private fun String.log() = Log.d("LogUtils_TAG", this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -171,6 +173,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val STORAGE_DIR = "tavrida-electro-counters"
         private var imageId = 0
         private val TAG = CameraActivity::class.java.simpleName
 
