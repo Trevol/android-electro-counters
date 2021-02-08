@@ -1,3 +1,11 @@
+- протоколирование
+   - модель устройства
+   - кадры (с номерами)
+   - detections (с номером кадра)
+   - тайминги
+- диалог настроек
+  - пока одна настройка - протоколирование ON/OFF
+- сохранение состияния () между поворотами экрана
 - QR
   + simple app (Kotlin) for visualize localized QR
   + отдельное приложение для локализации/расшифровки QR
@@ -5,10 +13,18 @@
   - интегрировать считывание в основное приложение
       - рисовать локализацию
       - отображать в текстовом поле значение
-  -
+      - SubscriberDetector: запоминать id потребителя даже если QR-код вышел из поля зрения
+          - как сбрасывать id потребителя??
+             - stop
+             - появление нового QR
+             - не определяется id в течение некоторого времени (500 мс, например)
   - /home/trevol/Repos/Android/mlkit/android/vision-quickstart
+
+-
+
 - skip detection near ROI edges
 - skip detections outside of screen
+- skip screen (and digits in it) if screen near detection region edges
 - train with negative images
    - hard negative mining from annotated images
    - with QR code  (current detector detect digits in QR codes)
@@ -19,7 +35,9 @@
        - т.е. обрабатывать последние N кадров, НЕ подтвержденных детектором
    - KCF трекер?
    - SORT-трекер
-
+   - template matching or refine with template matching??
+   - обычно "перескакивание" происходит в область между цифрами - может как-то "пространственно" определять такие аномалии?
+- storage https://android-developers.googleblog.com/2020/07/bringing-modern-storage-to-vibers-users.html
 
 - QR code scanning
    - google "zbar android"

@@ -32,7 +32,7 @@ import kotlin.random.Random
 class CameraActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
-    private val permissions = listOf(Manifest.permission.CAMERA)
+    private val permissions = listOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK

@@ -15,7 +15,7 @@
   ~ limitations under the License.
   -->
 <resources>
-    <string name="app_name">ElectroCounters_2</string>
+    <string name="app_name">ElectroCounters</string>
     <string name="capture_button_alt">Capture</string>
     <string name="unknown">UNKNOWN</string>
 </resources>
