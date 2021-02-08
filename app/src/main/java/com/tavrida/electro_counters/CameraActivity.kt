@@ -89,7 +89,7 @@ class CameraActivity : AppCompatActivity() {
 
     fun startStopListener() {
         stopped = !stopped
-        framesStorage.toggleSession(started)
+        framesStorage!!.toggleSession(started)
         syncAnalysisUIState()
     }
 
@@ -144,7 +144,7 @@ class CameraActivity : AppCompatActivity() {
 
         imageView_preview.post {
             if (started) {
-                framesStorage.addFrame(inputBitmap)
+                framesStorage!!.addFrame(inputBitmap)
             }
             imageView_preview.setImageBitmap(inputBitmap)
         }
