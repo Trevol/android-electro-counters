@@ -17,6 +17,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.tavrida.utils.assert
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import kotlinx.android.synthetic.main.activity_camera.*
@@ -29,7 +30,8 @@ import kotlin.random.Random
 class CameraActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
-    private val permissions = listOf(Manifest.permission.CAMERA)
+    private val permissions =
+        listOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
@@ -48,7 +50,20 @@ class CameraActivity : AppCompatActivity() {
         return __bitmapBuffer!!
     }
 
-    val framesStorage by lazy { FramesStorage(File(filesDir, "frames")) }
+    var framesStorage: FramesStorage? = null
+
+    private fun prepareFramesStorage() {
+        (framesStorage == null).assert()
+        //try to external storage
+        val (storageDir, _) = createExternalStorageDir("tavrida-electro-counters")
+        if (storageDir != null) {
+            framesStorage = FramesStorage(storageDir)
+        }else{
+            //fallback to internal files storage
+            framesStorage = FramesStorage(filesDir)
+        }
+
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +77,14 @@ class CameraActivity : AppCompatActivity() {
             startStopListener()
         }
 
-        framesStorage //trigger creation
+        if (hasPermissions(this)) {
+            bindCameraUseCases()
+            prepareFramesStorage()
+        } else {
+            ActivityCompat.requestPermissions(
+                this, permissions.toTypedArray(), permissionsRequestCode
+            )
+        }
     }
 
     fun startStopListener() {
@@ -83,7 +105,7 @@ class CameraActivity : AppCompatActivity() {
             val cameraProvider = cameraProviderFuture.get()
 
             //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
-            val (w, h) = 1280 to 960
+            val (w, h) = 640 to 480
             val targetRes = when (imageView_preview.display.rotation) {
                 Surface.ROTATION_90, Surface.ROTATION_270 -> Size(w, h)
                 Surface.ROTATION_0, Surface.ROTATION_180 -> Size(h, w)
@@ -129,19 +151,6 @@ class CameraActivity : AppCompatActivity() {
 
     }
 
-
-    override fun onResume() {
-        super.onResume()
-        // Request permissions each time the app resumes, since they can be revoked at any time
-        if (hasPermissions(this)) {
-            bindCameraUseCases()
-        } else {
-            ActivityCompat.requestPermissions(
-                this, permissions.toTypedArray(), permissionsRequestCode
-            )
-        }
-    }
-
     override fun onRequestPermissionsResult(
         requestCode: Int,
         permissions: Array<out String>,
@@ -150,6 +159,7 @@ class CameraActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == permissionsRequestCode && hasPermissions(this)) {
             bindCameraUseCases()
+            prepareFramesStorage()
         } else {
             finish() // If we don't have the required permissions, we can't run
         }
