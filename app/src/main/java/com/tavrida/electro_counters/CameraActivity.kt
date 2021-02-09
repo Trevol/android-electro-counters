@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import android.view.View
@@ -22,7 +21,6 @@ import com.tavrida.utils.assert
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import kotlinx.android.synthetic.main.activity_camera.*
-import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -37,7 +35,7 @@ class CameraActivity : AppCompatActivity() {
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
     private var stopped = true
-    private val started get() = !stopped
+    private inline val started get() = !stopped
 
     private val yuvToRgbConverter by lazy { YuvToRgbConverter(this) }
     private var __bitmapBuffer: Bitmap? = null
@@ -51,21 +49,11 @@ class CameraActivity : AppCompatActivity() {
         return __bitmapBuffer!!
     }
 
-    var framesStorage: FramesStorage? = null
-
-    private fun prepareFramesStorage() {
-        (framesStorage == null).assert()
-        //try to external storage
-        val (storageDir, _) = createExternalStorageDir(STORAGE_DIR)
-        if (storageDir != null) {
-            framesStorage = FramesStorage(storageDir)
-        } else { // fallback to internal files storage
-            framesStorage = FramesStorage(filesDir)
-        }
-
+    var framesRecorder: FramesRecorder? = null
+    private fun prepareFramesRecorder() {
+        (framesRecorder == null).assert()
+        framesRecorder = prepareFramesRecorder(STORAGE_DIR, filesDir)
     }
-
-    private fun String.log() = Log.d("LogUtils_TAG", this)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,7 +69,7 @@ class CameraActivity : AppCompatActivity() {
 
         if (hasPermissions(this)) {
             bindCameraUseCases()
-            prepareFramesStorage()
+            prepareFramesRecorder()
         } else {
             ActivityCompat.requestPermissions(
                 this, permissions.toTypedArray(), permissionsRequestCode
@@ -91,7 +79,7 @@ class CameraActivity : AppCompatActivity() {
 
     fun startStopListener() {
         stopped = !stopped
-        framesStorage!!.toggleSession(started)
+        framesRecorder!!.toggleSession(started)
         syncAnalysisUIState()
     }
 
@@ -146,7 +134,7 @@ class CameraActivity : AppCompatActivity() {
 
         imageView_preview.post {
             if (started) {
-                framesStorage!!.addFrame(inputBitmap)
+                framesRecorder!!.addFrame(inputBitmap)
             }
             imageView_preview.setImageBitmap(inputBitmap)
         }
@@ -161,7 +149,7 @@ class CameraActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == permissionsRequestCode && hasPermissions(this)) {
             bindCameraUseCases()
-            prepareFramesStorage()
+            prepareFramesRecorder()
         } else {
             finish() // If we don't have the required permissions, we can't run
         }

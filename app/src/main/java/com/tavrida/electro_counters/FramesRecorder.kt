@@ -3,7 +3,6 @@ package com.tavrida.electro_counters
 import android.graphics.Bitmap
 import android.os.Environment
 import com.tavrida.utils.assert
-import com.tavrida.utils.padStartEx
 import com.tavrida.utils.saveAsJpeg
 import com.tavrida.utils.zeroPad
 import java.io.File
@@ -11,7 +10,7 @@ import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
 
-class FramesStorage(storageDir: File, subDir: String = "frames") {
+class FramesRecorder(storageDir: File, subDir: String = "frames") {
     private val framesDir = File(storageDir, subDir)
 
     private var framesPos = 0
@@ -65,9 +64,23 @@ class FramesStorage(storageDir: File, subDir: String = "frames") {
 
 }
 
-data class CreateExternalStorageDirResult(val externalDir: File?, val errorReason: String?)
+fun prepareFramesRecorder(
+    externalStorageDir: String,
+    internalStorageDir: File,
+    subDir: String = "frames"
+): FramesRecorder {
+    //try to external storage
+    val (storageDir, _) = createExternalStorageDir(externalStorageDir)
+    if (storageDir != null) {
+        return FramesRecorder(storageDir, subDir)
+    }
+    // fallback to internal files storage
+    return FramesRecorder(internalStorageDir, subDir)
+}
 
-fun createExternalStorageDir(dirName: String): CreateExternalStorageDirResult {
+private data class CreateExternalStorageDirResult(val externalDir: File?, val errorReason: String?)
+
+private fun createExternalStorageDir(dirName: String): CreateExternalStorageDirResult {
     try {
         if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED) {
             return CreateExternalStorageDirResult(
