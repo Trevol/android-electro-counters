@@ -12,44 +12,31 @@
         android:layout_height="match_parent"
         android:scaleType="centerCrop" />
 
+    <TextView
+        android:id="@+id/view_TapToStart"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tap to start"
+        android:textSize="16pt"
+        android:textColor="#FFC107"
+        android:layout_gravity="center"
+        />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!--
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="60dp"
-                    android:gravity="center"
-                    android:orientation="horizontal"
-                    app:layout_constraintTop_toTopOf="parent">
-
-                    <ImageView
-                        android:id="@+id/imageView_screen"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:visibility="gone"/>
-
-
-                    <ImageView
-                        android:id="@+id/imageView_digits"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:visibility="gone"/>
-                </LinearLayout>
-        -->
         <TextView
             android:id="@+id/textView_readings"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_marginEnd="10dp"
-            android:background="#999"
-            android:text="12345"
-            android:textColor="@android:color/holo_green_light"
-            android:textSize="14pt"
+            android:background="#88ffffff"
+            android:minWidth="80pt"
+            android:text="0222286"
+            android:textColor="#ff000000"
+            android:textSize="11pt"
             android:visibility="visible"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -60,15 +47,16 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
             android:layout_marginEnd="10dp"
-            android:background="#999"
-            android:text=""
-            android:textColor="@android:color/holo_green_light"
-            android:textSize="14pt"
+            android:background="#88ffffff"
+            android:minWidth="80pt"
+            android:text="123-456-789-0"
+            android:textColor="#ff000000"
+            android:textSize="11pt"
             android:visibility="visible"
-            app:layout_constraintRight_toLeftOf="@id/textView_readings"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/textView_readings" />
 
-        <ImageButton
+        <!--<ImageButton
             android:id="@+id/buttonStartStop"
             android:layout_width="64dp"
             android:layout_height="64dp"
@@ -78,7 +66,7 @@
             android:scaleType="fitCenter"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent" />
+            app:layout_constraintRight_toRightOf="parent" />-->
 
         <TextView
             android:id="@+id/textView_timings"
@@ -99,7 +87,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/switch_timings_margin"
-            android:text="Record"
+            android:text="Log"
             android:textColor="#FFF"
             android:textSize="7pt"
             android:visibility="gone"

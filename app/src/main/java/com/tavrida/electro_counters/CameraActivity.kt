@@ -20,7 +20,6 @@ import com.tavrida.counter_scanner.scanning.DetectionRoi
 import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
-import com.tavrida.utils.*
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.opencv.android.OpenCVLoader
 import java.io.File
@@ -32,7 +31,8 @@ import kotlin.random.Random
 class CameraActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
-    private val permissions = listOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+    private val permissions =
+        listOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
@@ -44,7 +44,7 @@ class CameraActivity : AppCompatActivity() {
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
     private val detectorRoi = DetectionRoi(Size(400, 180))
     private val detectorRoiPaint = Paint().apply {
-        color = Color.rgb(0, 255, 0)
+        color = Color.rgb(0xFF, 0xC1, 0x07)//255,193,7 Color.rgb(0, 255, 0) //0xFFC107
         style = Paint.Style.STROKE
         strokeWidth = 3f
     }
@@ -72,9 +72,6 @@ class CameraActivity : AppCompatActivity() {
         syncAnalysisUIState()
 
         imageView_preview.setOnClickListener {
-            startStopListener()
-        }
-        buttonStartStop.setOnClickListener {
             startStopListener()
         }
         recordingSwitch.isChecked = recordingEnabled
@@ -115,12 +112,14 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun syncAnalysisUIState() {
-        val r = if (stopped) R.drawable.start_128 else R.drawable.stop_128
-        buttonStartStop.setBackgroundResource(r)
-        textView_timings.visibility = if (stopped) View.INVISIBLE else View.VISIBLE
+        view_TapToStart.visibility = if (stopped) View.VISIBLE else View.INVISIBLE
+        val infoVisibility = if (stopped) View.INVISIBLE else View.VISIBLE
+        textView_timings.visibility = infoVisibility
         textView_timings.text = ""
-        textView_readings.visibility = if (stopped) View.INVISIBLE else View.VISIBLE
+        textView_readings.visibility = infoVisibility
         textView_readings.text = ""
+        textView_clientId.visibility = infoVisibility
+        textView_clientId.text = ""
     }
 
     private fun bindCameraUseCases() = imageView_preview.post {
@@ -193,7 +192,7 @@ class CameraActivity : AppCompatActivity() {
             val timingTxt = "${duration}ms"
 
             val readings = scanResult.readingInfo?.reading
-            val imageWithDrawings = ScanResultDrawer().draw(inputBitmap.copy(), scanResult)
+            val imageWithDrawings = ScanResultDrawer().draw(inputBitmap, scanResult)
             textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
             imageView_preview.setImageBitmap(imageWithDrawings)
 
