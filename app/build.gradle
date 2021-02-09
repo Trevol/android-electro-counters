@@ -63,7 +63,7 @@ dependencies {
     implementation 'androidx.camera:camera-lifecycle:1.1.0-alpha01'
 
     // CameraX View class
-    implementation 'androidx.camera:camera-view:1.0.0-alpha20'
+    //implementation 'androidx.camera:camera-view:1.0.0-alpha20'
 
     testImplementation 'org.robolectric:robolectric:4.5'
     testImplementation 'junit:junit:4.13.1'
