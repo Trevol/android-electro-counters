@@ -22,8 +22,9 @@ import kotlin.concurrent.withLock
 class NonblockingCounterReadingScanner(
     detector: ScreenDigitDetector,
     val detectorRoi: DetectionRoi,
-    val readingStabilityThresholdMs: Long
+    stabilityThresholdMs: Long
 ) : Closeable {
+
     data class ScanResult(
         val digitsAtLocations: List<DigitAtLocation>,
         val aggregatedDetections: List<AggregatedDetections>,
@@ -34,6 +35,10 @@ class NonblockingCounterReadingScanner(
         constructor() : this(listOf(), listOf(), null, listOf(), "")
 
         data class ReadingInfo(val reading: String, val millisecondsOfStability: Long)
+
+        companion object {
+            fun Empty() = ScanResult()
+        }
     }
 
     var stopped = false
@@ -45,6 +50,7 @@ class NonblockingCounterReadingScanner(
         skipDigitsOutsideScreen = true,
         skipDigitsNearImageEdges = true
     )
+    private val readingInfoTracker = ReadingInfoTracker(stabilityThresholdMs)
     private val qrScanner = QRScanner(processNthImage = 5)
 
     private var serialSeq = 0
@@ -68,9 +74,7 @@ class NonblockingCounterReadingScanner(
     }
 
     fun scan(inputImg: Bitmap): ScanResult {
-        //TODO: can be stopped (with clearing state) from other thread (UI-thread) during processing
-        //TODO: may be use ReentrantLock..
-        return lock.withLock {
+        return lock.withLock { //can be stopped (with clearing state) from other (UI)thread
             scanNolock(inputImg)
         }
     }
@@ -78,7 +82,7 @@ class NonblockingCounterReadingScanner(
     fun scanNolock(inputImg: Bitmap): ScanResult {
         try {
             if (stopped) {
-                return NO_DETECTIONS()
+                return ScanResult.Empty()
             }
 
             if (prevFrameItems.size > MAX_QUEUE_SIZE) {
@@ -104,7 +108,7 @@ class NonblockingCounterReadingScanner(
 
             if (firstScan) { // special processing of first frame - no prev frame and no detections yet
                 firstScan = false
-                return NO_DETECTIONS()
+                return ScanResult.Empty()
             }
 
             val detectorResult = detectorJob.output.keepLastOrNull()
@@ -126,7 +130,7 @@ class NonblockingCounterReadingScanner(
             }
 
             val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
-            val readingInfo = readingInfo(digitsAtBoxes)
+            val readingInfo = readingInfoTracker.getInfo(digitsAtBoxes)
             return ScanResult(
                 digitsAtBoxes,
                 actualDetections,
@@ -142,29 +146,14 @@ class NonblockingCounterReadingScanner(
     private fun getClientId(barcodes: List<Barcode>): String {
         //TODO: use barcode closest to screen
         //TODO: remember
-        return if (barcodes.isNotEmpty()) barcodes[0].rawValue else ""
+        return barcodes.firstOrNull()?.rawValue ?: ""
     }
 
-    var prevReading = ""
-    var startOfReadingMs = -1L
-    private fun readingInfo(digitsAtLocations: List<DigitAtLocation>): ScanResult.ReadingInfo? {
-        if (digitsAtLocations.isEmpty())
-            return null
-        val reading = digitsAtLocations.toReading()
-        if (reading != prevReading) { // new reading available
-            prevReading = reading
-            startOfReadingMs = System.currentTimeMillis()
-        }
-
-        val msOfReadingStability = System.currentTimeMillis() - startOfReadingMs
-        if (msOfReadingStability >= readingStabilityThresholdMs)
-            return ScanResult.ReadingInfo(reading, msOfReadingStability)
-        return null
-
-    }
 
     private companion object {
         const val MAX_QUEUE_SIZE = 100
+
+        private data class SerialGrayItem(val serialId: Int, val gray: Mat)
 
         private fun List<SerialGrayItem>.bySerialId(serialId: Int): List<SerialGrayItem> {
             val firstSerialId = this[0].serialId
@@ -179,6 +168,48 @@ class NonblockingCounterReadingScanner(
             } else {
                 value
             }
+
+        fun <E> MutableList<E>.clearBeforeLast() {
+            if (size > 1) {
+                val lastItem = last()
+                clear()
+                add(lastItem)
+            }
+        }
+
+        fun <E> List<E>.get2(index: Int) =
+            if (index >= 0) {
+                get(index)
+            } else {
+                //-1 should be last item (with lastIndex)
+                get(lastIndex + 1 + index)
+            }
+    }
+}
+
+private class ReadingInfoTracker(val stabilityThresholdMs: Long) {
+    var prevReading = ""
+    var startOfReadingMs = -1L
+
+    fun getInfo(digitsAtLocations: List<DigitAtLocation>): NonblockingCounterReadingScanner.ScanResult.ReadingInfo? {
+        if (digitsAtLocations.isEmpty())
+            return null
+        val reading = digitsAtLocations.toReading()
+        if (reading != prevReading) { // new reading available
+            prevReading = reading
+            startOfReadingMs = System.currentTimeMillis()
+        }
+
+        val msOfReadingStability = System.currentTimeMillis() - startOfReadingMs
+        if (msOfReadingStability >= stabilityThresholdMs)
+            return NonblockingCounterReadingScanner.ScanResult.ReadingInfo(
+                reading,
+                msOfReadingStability
+            )
+        return null
+    }
+
+    private companion object {
 
         private fun List<DigitAtLocation>.toReading(): String {
             return sortedBy { it.location.left }
@@ -200,7 +231,12 @@ class NonblockingCounterReadingScanner(
                 if (verticalItem == null) {
                     resultItems.add(thisItem)
                 } else {
-                    resultItems.add(chooseVerticallyLower(thisItem, verticalItem))
+                    resultItems.add(
+                        chooseVerticallyLower(
+                            thisItem,
+                            verticalItem
+                        )
+                    )
                     srcItems.remove(verticalItem)
                 }
                 srcItems.remove(thisItem)
@@ -222,26 +258,6 @@ class NonblockingCounterReadingScanner(
         }
 
         private inline fun Float.between(v1: Float, v2: Float) = this in v1..v2
-
-        private data class SerialGrayItem(val serialId: Int, val gray: Mat)
-
-        fun NO_DETECTIONS() = ScanResult()
-
-        fun <E> MutableList<E>.clearBeforeLast() {
-            if (size > 1) {
-                val lastItem = last()
-                clear()
-                add(lastItem)
-            }
-        }
-
-        fun <E> List<E>.get2(index: Int) =
-            if (index >= 0) {
-                get(index)
-            } else {
-                //-1 should be last item (with lastIndex)
-                get(lastIndex + 1 + index)
-            }
     }
 }
 
@@ -252,12 +268,5 @@ private class BitmapToMats {
         Utils.bitmapToMat(image, rgbaBuffer, true)
         return Mat().apply { Imgproc.cvtColor(rgbaBuffer, this, Imgproc.COLOR_RGBA2GRAY) }
     }
-
-    /*private val rgbBuffer = Mat()
-    fun convert(image: Bitmap): Pair<Mat, Mat> {
-        Utils.bitmapToMat(image, rgbaBuffer, true)
-        Imgproc.cvtColor(rgbaBuffer, rgbBuffer, Imgproc.COLOR_RGBA2RGB)
-        return rgbBuffer to rgbBuffer.rgb2gray()
-    }*/
 }
 

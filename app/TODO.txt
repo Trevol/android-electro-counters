@@ -23,7 +23,9 @@
              - не определяется id в течение некоторого времени (500 мс, например)
   - /home/trevol/Repos/Android/mlkit/android/vision-quickstart
 
--
+- глобальный обработчик исключений
+    - https://stackoverflow.com/questions/4427515/using-global-exception-handling-on-android
+    - https://www.bugsnag.com/blog/error-handling-on-android-part-2
 
 - skip detection near ROI edges
 - skip detections outside of screen
