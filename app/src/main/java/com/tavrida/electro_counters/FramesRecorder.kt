@@ -10,7 +10,7 @@ import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
 
-class FramesRecorder(storageDir: File, subDir: String = "frames") {
+class FramesRecorder(storageDir: File, subDir: String = "frames", var enabled: Boolean) {
     private val framesDir = File(storageDir, subDir)
 
     private var framesPos = 0
@@ -40,6 +40,9 @@ class FramesRecorder(storageDir: File, subDir: String = "frames") {
     }
 
     fun addFrame(frame: Bitmap) {
+        if (!enabled) {
+            return
+        }
         started.assert()
 
         framesPos.zeroPad(5)
@@ -67,15 +70,16 @@ class FramesRecorder(storageDir: File, subDir: String = "frames") {
 fun prepareFramesRecorder(
     externalStorageDir: String,
     internalStorageDir: File,
-    subDir: String = "frames"
+    subDir: String = "frames",
+    enabled: Boolean = false
 ): FramesRecorder {
     //try to external storage
     val (storageDir, _) = createExternalStorageDir(externalStorageDir)
     if (storageDir != null) {
-        return FramesRecorder(storageDir, subDir)
+        return FramesRecorder(storageDir, subDir, enabled)
     }
     // fallback to internal files storage
-    return FramesRecorder(internalStorageDir, subDir)
+    return FramesRecorder(internalStorageDir, subDir, enabled)
 }
 
 private data class CreateExternalStorageDirResult(val externalDir: File?, val errorReason: String?)

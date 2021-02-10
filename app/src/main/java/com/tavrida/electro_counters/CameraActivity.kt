@@ -39,7 +39,6 @@ class CameraActivity : AppCompatActivity() {
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
     private var stopped = true
     private val started get() = !stopped
-    private var recordingEnabled = false
 
     private val cameraImageConverter by lazy { CameraImageConverter2(this) }
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
@@ -56,21 +55,16 @@ class CameraActivity : AppCompatActivity() {
 
     var counterScanner: NonblockingCounterReadingScanner? = null
 
-    val detectionLogger by lazy {
-        DetectionLogger(recordingEnabled, logDir = File(filesDir, "detections_log"))
-    }
-
     var framesRecorder: FramesRecorder? = null
     private fun prepareFramesRecorder() {
         (framesRecorder == null).assert()
-        framesRecorder = prepareFramesRecorder(STORAGE_DIR, filesDir)
+        framesRecorder = prepareFramesRecorder(STORAGE_DIR, filesDir, enabled = loggingEnabled)
     }
 
     private fun initLazyVars() {
         //init lazies
         cameraImageConverter
         counterScannerProvider
-        detectionLogger
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,10 +84,10 @@ class CameraActivity : AppCompatActivity() {
         imageView_preview.setOnClickListener {
             startStopListener()
         }
-        recordingSwitch.isChecked = recordingEnabled
+        recordingSwitch.isChecked = loggingEnabled
         recordingSwitch.setOnCheckedChangeListener { _, isChecked ->
-            recordingEnabled = isChecked
-            detectionLogger.loggingEnabled = recordingEnabled
+            loggingEnabled = isChecked
+            framesRecorder?.enabled = loggingEnabled
         }
         initLazyVars()
     }
@@ -186,9 +180,7 @@ class CameraActivity : AppCompatActivity() {
         val bitmap = image.use { cameraImageConverter.convert(it) }
 
         if (started) {
-            if (recordingEnabled) {
-                framesRecorder!!.addFrame(bitmap)
-            }
+            framesRecorder!!.addFrame(bitmap)
             val result = counterScanner!!.scan(bitmap)
             detectorRoi.draw(bitmap, detectorRoiPaint)
             showDetectionResults(bitmap, result, measureAnalyzeImageCall())
@@ -250,6 +242,9 @@ class CameraActivity : AppCompatActivity() {
         init {
             OpenCVLoader.initDebug()
         }
+
+        //global var - value should be preserved between activity recreations
+        var loggingEnabled = false
 
         const val STORAGE_DIR = "tavrida-electro-counters"
         private val TAG = CameraActivity::class.java.simpleName
