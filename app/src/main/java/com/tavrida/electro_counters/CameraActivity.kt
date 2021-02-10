@@ -20,6 +20,7 @@ import com.tavrida.counter_scanner.scanning.DetectionRoi
 import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
+import com.tavrida.utils.assert
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.opencv.android.OpenCVLoader
 import java.io.File
@@ -44,7 +45,7 @@ class CameraActivity : AppCompatActivity() {
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
     private val detectorRoi = DetectionRoi(Size(400, 180))
     private val detectorRoiPaint = Paint().apply {
-        color = Color.rgb(0xFF, 0xC1, 0x07)//255,193,7 Color.rgb(0, 255, 0) //0xFFC107
+        color = Color.rgb(0xFF, 0xC1, 0x07) //255,193,7 Color.rgb(0, 255, 0) //0xFFC107
         style = Paint.Style.STROKE
         strokeWidth = 3f
     }
@@ -59,6 +60,12 @@ class CameraActivity : AppCompatActivity() {
         DetectionLogger(recordingEnabled, logDir = File(filesDir, "detections_log"))
     }
 
+    var framesRecorder: FramesRecorder? = null
+    private fun prepareFramesRecorder() {
+        (framesRecorder == null).assert()
+        framesRecorder = prepareFramesRecorder(STORAGE_DIR, filesDir)
+    }
+
     private fun initLazyVars() {
         //init lazies
         cameraImageConverter
@@ -71,11 +78,20 @@ class CameraActivity : AppCompatActivity() {
         setContentView(R.layout.activity_camera)
         syncAnalysisUIState()
 
+        if (hasPermissions(this)) {
+            bindCameraUseCases()
+            prepareFramesRecorder()
+        } else {
+            ActivityCompat.requestPermissions(
+                this, permissions.toTypedArray(), permissionsRequestCode
+            )
+        }
+
         imageView_preview.setOnClickListener {
             startStopListener()
         }
         recordingSwitch.isChecked = recordingEnabled
-        recordingSwitch.setOnCheckedChangeListener { compoundButton, isChecked ->
+        recordingSwitch.setOnCheckedChangeListener { _, isChecked ->
             recordingEnabled = isChecked
             detectionLogger.loggingEnabled = recordingEnabled
         }
@@ -103,6 +119,7 @@ class CameraActivity : AppCompatActivity() {
         // update flag at the end
         // because vars are accessed in separate thread (analyzeImage)
         this.stopped = stopped
+        framesRecorder!!.toggleSession(started)
         syncAnalysisUIState()
     }
 
@@ -169,6 +186,9 @@ class CameraActivity : AppCompatActivity() {
         val bitmap = image.use { cameraImageConverter.convert(it) }
 
         if (started) {
+            if (recordingEnabled) {
+                framesRecorder!!.addFrame(bitmap)
+            }
             val result = counterScanner!!.scan(bitmap)
             detectorRoi.draw(bitmap, detectorRoiPaint)
             showDetectionResults(bitmap, result, measureAnalyzeImageCall())
@@ -204,14 +224,7 @@ class CameraActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Request permissions each time the app resumes, since they can be revoked at any time
-        if (hasPermissions(this)) {
-            bindCameraUseCases()
-        } else {
-            ActivityCompat.requestPermissions(
-                this, permissions.toTypedArray(), permissionsRequestCode
-            )
-        }
+        bindCameraUseCases()
         syncAnalysisUIState()
     }
 
@@ -223,12 +236,12 @@ class CameraActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == permissionsRequestCode && hasPermissions(this)) {
             bindCameraUseCases()
+            prepareFramesRecorder()
         } else {
             finish() // If we don't have the required permissions, we can't run
         }
     }
 
-    /** Convenience method used to check if all permissions required by this app are granted */
     private fun hasPermissions(context: Context) = permissions.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }
@@ -238,6 +251,7 @@ class CameraActivity : AppCompatActivity() {
             OpenCVLoader.initDebug()
         }
 
+        const val STORAGE_DIR = "tavrida-electro-counters"
         private val TAG = CameraActivity::class.java.simpleName
 
         inline fun View.afterMeasured(crossinline block: () -> Unit) {
