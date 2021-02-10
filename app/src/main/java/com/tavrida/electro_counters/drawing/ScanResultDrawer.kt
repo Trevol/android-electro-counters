@@ -42,15 +42,16 @@ class ScanResultDrawer {
             digitPaintManager.setTextSizeForHeight(d.location.height() - 4, text)
             canvas.drawText(text, d.location.left + 2, d.location.top - 2, digitPaintManager.paint)
         }
-        for (barcode in scanResult.barcodes) {
-            val box = barcode.boundingBox!!
+
+        scanResult.consumerInfo?.barcodeLocation?.let { location ->
             canvas.drawCircle(
-                box.exactCenterX(),
-                box.exactCenterY(),
+                location.exactCenterX(),
+                location.exactCenterY(),
                 BARCODE_MARK_R,
                 barckodeMarkPaint
             )
         }
+
         return inputBitmap
     }
 }

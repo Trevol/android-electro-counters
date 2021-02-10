@@ -1,6 +1,7 @@
 package com.tavrida.counter_scanner.scanning
 
 import android.graphics.Bitmap
+import android.graphics.Rect
 import android.graphics.RectF
 import com.google.mlkit.vision.barcode.Barcode
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
@@ -22,7 +23,7 @@ import kotlin.concurrent.withLock
 
 class NonblockingCounterReadingScanner(
     detector: ScreenDigitDetector,
-    val detectorRoi: DetectionRoi,
+    private val detectorRoi: DetectionRoi,
     stabilityThresholdMs: Long
 ) : Closeable {
 
@@ -30,13 +31,17 @@ class NonblockingCounterReadingScanner(
         val digitsAtLocations: List<DigitAtLocation>,
         val aggregatedDetections: List<AggregatedDetections>,
         val readingInfo: ReadingInfo?,
-        val barcodes: List<Barcode>,
-        val clientId: String,
+        val consumerInfo: ConsumerInfo?
     ) {
-        data class ReadingInfo(val reading: String, val millisecondsOfStability: Long)
+        data class ReadingInfo(val reading: String, val msOfStability: Long)
+        data class ConsumerInfo(
+            val consumerId: String,
+            val barcodeLocation: Rect,
+            val msOfStability: Long
+        )
 
         companion object {
-            fun Empty() = ScanResult(listOf(), listOf(), null, listOf(), "")
+            fun Empty() = ScanResult(listOf(), listOf(), null, null)
         }
     }
 
@@ -50,7 +55,7 @@ class NonblockingCounterReadingScanner(
         skipDigitsNearImageEdges = true
     )
     private val readingInfoTracker = ReadingInfoTracker(stabilityThresholdMs)
-    private val qrScanner = QRScanner(processNthImage = 5)
+    private val consumerIdTracker = ConsumerIdTracker(scanNthImage = 5)
 
     private var serialSeq = 0
     private val prevFrameItems = mutableListOf<SerialGrayItem>()
@@ -78,7 +83,7 @@ class NonblockingCounterReadingScanner(
         }
     }
 
-    fun scanNolock(inputImg: Bitmap): ScanResult {
+    private fun scanNolock(inputImg: Bitmap): ScanResult {
         try {
             if (stopped) {
                 return ScanResult.Empty()
@@ -92,7 +97,7 @@ class NonblockingCounterReadingScanner(
             val (detectionRoiImg, _, roiOrigin) = detectorRoi.extractImage(inputImg)
             val grayMat = bitmapToMats.convertToGrayscale(inputImg)
 
-            qrScanner.postProcess(inputImg.copy(false))
+            consumerIdTracker.enqueueToProcessing(inputImg.copy(false))
 
             detectorJob.input.put(
                 DetectorJobInputItem(
@@ -124,28 +129,22 @@ class NonblockingCounterReadingScanner(
                 prevFrameItems.clearBeforeLast()
             } else {
                 (prevFrameItems.size >= 2).assert()
-                val prevGray = prevFrameItems.get2(-2).gray // grayMat is last item
+                val prevGray = prevFrameItems.getItem(-2).gray // grayMat is last item
                 actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
             }
 
             val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
             val readingInfo = readingInfoTracker.getInfo(digitsAtBoxes)
+            val consumerInfo = consumerIdTracker.consumerInfo()
             return ScanResult(
                 digitsAtBoxes,
                 actualDetections,
                 readingInfo,
-                qrScanner.barcodes(),
-                getClientId(qrScanner.barcodes())
+                consumerInfo
             )
         } finally {
             serialSeq++
         }
-    }
-
-    private fun getClientId(barcodes: List<Barcode>): String {
-        //TODO: use barcode closest to screen
-        //TODO: remember
-        return barcodes.firstOrNull()?.rawValue ?: ""
     }
 
 
@@ -168,7 +167,7 @@ class NonblockingCounterReadingScanner(
                 value
             }
 
-        fun <E> MutableList<E>.clearBeforeLast() {
+        private fun <E> MutableList<E>.clearBeforeLast() {
             if (size > 1) {
                 val lastItem = last()
                 clear()
@@ -176,7 +175,7 @@ class NonblockingCounterReadingScanner(
             }
         }
 
-        fun <E> List<E>.get2(index: Int) =
+        private fun <E> List<E>.getItem(index: Int) =
             if (index >= 0) {
                 get(index)
             } else {
@@ -187,8 +186,8 @@ class NonblockingCounterReadingScanner(
 }
 
 private class ReadingInfoTracker(val stabilityThresholdMs: Long) {
-    var prevReading = ""
-    var startOfReadingMs = -1L
+    private var prevReading = ""
+    private var startOfReadingMs = -1L
 
     fun getInfo(digitsAtLocations: List<DigitAtLocation>): NonblockingCounterReadingScanner.ScanResult.ReadingInfo? {
         if (digitsAtLocations.isEmpty())
@@ -258,6 +257,19 @@ private class ReadingInfoTracker(val stabilityThresholdMs: Long) {
 
         private inline fun Float.between(v1: Float, v2: Float) = this in v1..v2
     }
+}
+
+private class ConsumerIdTracker(scanNthImage: Int) {
+    fun enqueueToProcessing(image: Bitmap) {
+        qrScanner.postProcess(image)
+    }
+
+    fun consumerInfo(): NonblockingCounterReadingScanner.ScanResult.ConsumerInfo? {
+        // readingInfo needed??
+        TODO("Not yet implemented")
+    }
+
+    private val qrScanner = QRScanner(scanNthImage)
 }
 
 private class BitmapToMats {

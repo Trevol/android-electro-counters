@@ -209,7 +209,7 @@ class CameraActivity : AppCompatActivity() {
             imageView_preview.setImageBitmap(imageWithDrawings)
 
             textView_readings.text = if (readings.isNullOrEmpty()) "" else readings
-            textView_clientId.text = scanResult.clientId
+            textView_clientId.text = scanResult.consumerInfo?.consumerId
         }
     }
 
