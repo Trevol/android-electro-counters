@@ -9,6 +9,7 @@ import com.tavrida.counter_scanner.aggregation.DigitAtLocation
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.counter_scanner.utils.assert
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
+import com.tavrida.utils.copy
 import org.opencv.android.Utils
 import org.opencv.core.Mat
 import org.opencv.imgproc.Imgproc
@@ -32,16 +33,14 @@ class NonblockingCounterReadingScanner(
         val barcodes: List<Barcode>,
         val clientId: String,
     ) {
-        constructor() : this(listOf(), listOf(), null, listOf(), "")
-
         data class ReadingInfo(val reading: String, val millisecondsOfStability: Long)
 
         companion object {
-            fun Empty() = ScanResult()
+            fun Empty() = ScanResult(listOf(), listOf(), null, listOf(), "")
         }
     }
 
-    var stopped = false
+    private var stopped = false
     private val bitmapToMats = BitmapToMats()
     private val detectionTracker = AggregatedDigitDetectionTracker()
     private val digitExtractor = AggregatingBoxGroupingDigitExtractor()
@@ -93,7 +92,7 @@ class NonblockingCounterReadingScanner(
             val (detectionRoiImg, _, roiOrigin) = detectorRoi.extractImage(inputImg)
             val grayMat = bitmapToMats.convertToGrayscale(inputImg)
 
-            qrScanner.postProcess(inputImg)
+            qrScanner.postProcess(inputImg.copy(false))
 
             detectorJob.input.put(
                 DetectorJobInputItem(

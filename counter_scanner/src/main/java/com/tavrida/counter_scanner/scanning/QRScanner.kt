@@ -29,16 +29,15 @@ class QRScanner(private val processNthImage: Int) {
     private var barcodes = listOf<Barcode>()
     private var exception: Exception? = null
 
-    //TODO: может просто блокировать критической секцией? Вместо набора atomic-значений?
     private val lock = ReentrantLock()
 
-    fun postProcess(image: Bitmap, copyImageForProcessing: Boolean = true): List<Barcode> {
+    fun postProcess(image: Bitmap): List<Barcode> {
         return lock.withLock {
             if (state == State.IDLE) {
                 val readyToProcess = imgCounter >= processNthImage
                 imgCounter++
                 if (readyToProcess) {
-                    scanner.process(acquireImage(image, copyImageForProcessing))
+                    scanner.process(image)
                         .addOnSuccessListener { barcodes -> this.barcodes = barcodes }
                         .addOnFailureListener { }
                         .addOnCompleteListener { processingComplete(it) }
@@ -49,13 +48,6 @@ class QRScanner(private val processNthImage: Int) {
             barcodes
         }
     }
-
-    private fun acquireImage(image: Bitmap, copyImageForProcessing: Boolean) =
-        if (copyImageForProcessing) {
-            image.copy(isMutable = false)
-        } else {
-            image
-        }
 
     fun barcodes() = lock.withLock { barcodes }
 
