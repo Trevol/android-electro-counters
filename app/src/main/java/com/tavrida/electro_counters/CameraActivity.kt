@@ -17,18 +17,19 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.counter_scanner.scanning.DetectionRoi
-import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
+import com.tavrida.counter_scanner.scanning.CounterScanner
+import com.tavrida.counter_scanner.scanning.CounterScaningResult
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.assert
 import kotlinx.android.synthetic.main.activity_camera.*
 import org.opencv.android.OpenCVLoader
-import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
+import kotlin.time.ExperimentalTime
 
-/** Activity that displays the camera and performs object detection on the incoming frames */
+
 class CameraActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
@@ -53,7 +54,7 @@ class CameraActivity : AppCompatActivity() {
     // private val cameraRes = Size(800, 600)
     private val cameraRes = Size(640, 480)
 
-    var counterScanner: NonblockingCounterReadingScanner? = null
+    var counterScanner: CounterScanner? = null
 
     var framesRecorder: FramesRecorder? = null
     private fun prepareFramesRecorder() {
@@ -194,7 +195,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun showDetectionResults(
         inputBitmap: Bitmap,
-        scanResult: NonblockingCounterReadingScanner.ScanResult,
+        scanResult: CounterScaningResult,
         duration: Long
     ) {
         if (stopped) {

@@ -5,15 +5,17 @@ import android.graphics.Bitmap
 import android.util.Size
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.counter_scanner.scanning.DetectionRoi
-import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
+import com.tavrida.counter_scanner.scanning.CounterScanner
 import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
+import kotlin.time.ExperimentalTime
+
 
 class CounterScannerProvider2() {
     fun createScanner(context: Context, detectorRoi: DetectionRoi) =
-        NonblockingCounterReadingScanner(createDetector(context), detectorRoi, 500)
+        CounterScanner(createDetector(context), detectorRoi, 500)
 
     private fun createDetector(context: Context) =
         ScreenDigitDetector(objectDetector.instance(context))

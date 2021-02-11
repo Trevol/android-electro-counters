@@ -1,18 +1,6 @@
 package com.tavrida.electro_counters
 
-import android.graphics.Bitmap
-import android.graphics.RectF
-import com.tavrida.counter_scanner.detection.DigitDetectionResult
-import com.tavrida.counter_scanner.detection.ObjectDetectionResult
-import com.tavrida.utils.roi
-
-import com.tavrida.utils.saveAsJpeg
-import org.opencv.core.Rect
-import org.opencv.core.Rect2d
 import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.*
 
 class DetectionLogger(loggingEnabled: Boolean, val logDir: File) {
     private var sessionId: String = ""

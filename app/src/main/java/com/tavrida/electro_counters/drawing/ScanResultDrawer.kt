@@ -1,10 +1,7 @@
 package com.tavrida.electro_counters.drawing
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import com.tavrida.counter_scanner.scanning.NonblockingCounterReadingScanner
+import android.graphics.*
+import com.tavrida.counter_scanner.scanning.CounterScaningResult
 import com.tavrida.utils.PaintFontSizeManager
 
 class ScanResultDrawer {
@@ -27,12 +24,12 @@ class ScanResultDrawer {
             style = Paint.Style.FILL_AND_STROKE
             strokeWidth = 1f
         }
-        private const val BARCODE_MARK_R = 10f
+        private const val BARCODE_MARK_R = 10
     }
 
     fun draw(
         inputBitmap: Bitmap,
-        scanResult: NonblockingCounterReadingScanner.ScanResult
+        scanResult: CounterScaningResult
     ): Bitmap {
         val canvas = Canvas(inputBitmap)
         for (d in scanResult.digitsAtLocations) {
@@ -44,12 +41,17 @@ class ScanResultDrawer {
         }
 
         scanResult.consumerInfo?.barcodeLocation?.let { location ->
-            canvas.drawCircle(
+            val markRect = Rect(
+                location.centerX() - BARCODE_MARK_R, location.centerY() - BARCODE_MARK_R,
+                location.centerX() + BARCODE_MARK_R, location.centerY() + BARCODE_MARK_R
+            )
+            canvas.drawRect(markRect, barckodeMarkPaint)
+            /*canvas.drawCircle(
                 location.exactCenterX(),
                 location.exactCenterY(),
                 BARCODE_MARK_R,
                 barckodeMarkPaint
-            )
+            )*/
         }
 
         return inputBitmap
