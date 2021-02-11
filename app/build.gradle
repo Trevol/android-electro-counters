@@ -52,7 +52,7 @@ dependencies {
 
     // App compat and UI things
     implementation 'androidx.appcompat:appcompat:1.2.0'
-    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.2.0'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.3.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     implementation project(path: ':opencv_sdk')
     implementation project(path: ':counter_scanner')
