@@ -95,7 +95,8 @@ class CameraActivity : AppCompatActivity() {
             // val (w, h) = 1280 to 960
             // val (w, h) = 1024 to 768
             // val (w, h) = 960 to 720
-            val (w, h) = 800 to 600
+            // val (w, h) = 800 to 600
+            val (w, h) = 640 to 480
             val targetRes = when (imageView_preview.display.rotation) {
                 Surface.ROTATION_90, Surface.ROTATION_270 -> Size(w, h)
                 Surface.ROTATION_0, Surface.ROTATION_180 -> Size(h, w)

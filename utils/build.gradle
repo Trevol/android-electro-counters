@@ -50,7 +50,7 @@ android {
 dependencies {
 
     // Kotlin lang
-    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.4.21'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.4.30'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.4.2'
 
     // App compat and UI things
@@ -60,7 +60,7 @@ dependencies {
     // EXIF Interface
     implementation 'androidx.exifinterface:exifinterface:1.3.2'
     implementation project(path: ':opencv_sdk')
-    implementation 'androidx.camera:camera-core:1.0.0-rc01'
+    implementation 'androidx.camera:camera-core:1.1.0-alpha01'
 
     // Unit testing
     testImplementation 'androidx.test.ext:junit:1.1.2'
