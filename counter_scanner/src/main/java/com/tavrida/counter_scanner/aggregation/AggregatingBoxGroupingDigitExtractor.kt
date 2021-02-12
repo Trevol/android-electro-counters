@@ -2,19 +2,18 @@ package com.tavrida.counter_scanner.aggregation
 
 import com.tavrida.counter_scanner.detection.DigitDetectionResult
 
-data class Digits_AggregatedDetections(
-    val digitsAtLocations: List<DigitAtLocation>,
-    val aggregatedDetections: List<AggregatedDetections>
-)
-
 class AggregatingBoxGroupingDigitExtractor {
+    /*
+    data class Digits_AggregatedDetections(
+    val digitsAtLocations: List<DigitAtLocation>,
+    val aggregatedDetections: List<AggregatedDetections>)
     fun extract(currentDetections: Collection<DigitDetectionResult>, prevDetections: Collection<AggregatedDetections>):
             Digits_AggregatedDetections {
 
         val aggregatedDetections = aggregateDetections(currentDetections, prevDetections)
         val digits = extractDigits(aggregatedDetections)
         return Digits_AggregatedDetections(digits, aggregatedDetections)
-    }
+    }*/
 
     fun aggregateDetections(
         currentDetections: Collection<DigitDetectionResult>,
@@ -25,7 +24,7 @@ class AggregatingBoxGroupingDigitExtractor {
         val scores = currentDetections.map { it.score } + prevDetections.map { it.score }
         val digitsCounts = currentDetections.map { listOf(DigitCount(it.digit, 1)) } +
                 prevDetections.map { it.digitsCounts }
-
+        //TODO: boxes from detections have priority
         return groupBoxes(boxes, scores, .04f)
             .groupIndices.zip(digitsCounts)
             .groupBy({ it.first }, { it.second })
