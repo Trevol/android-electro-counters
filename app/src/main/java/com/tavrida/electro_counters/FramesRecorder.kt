@@ -10,8 +10,8 @@ import java.lang.Exception
 import java.text.SimpleDateFormat
 import java.util.*
 
-class FramesRecorder(storageDir: File, subDir: String = "frames", var enabled: Boolean) {
-    private val framesDir = File(storageDir, subDir)
+class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled: Boolean) {
+    private val framesDir = File(storage.root, subDir)
 
     private var framesPos = 0
     private var sessionId = ""
@@ -67,7 +67,7 @@ class FramesRecorder(storageDir: File, subDir: String = "frames", var enabled: B
 
 }
 
-fun prepareFramesRecorder(
+/*fun prepareFramesRecorder(
     externalStorageDir: String,
     internalStorageDir: File,
     subDir: String = "frames",
@@ -80,27 +80,5 @@ fun prepareFramesRecorder(
     }
     // fallback to internal files storage
     return FramesRecorder(internalStorageDir, subDir, enabled)
-}
+}*/
 
-private data class CreateExternalStorageDirResult(val externalDir: File?, val errorReason: String?)
-
-private fun createExternalStorageDir(dirName: String): CreateExternalStorageDirResult {
-    try {
-        if (Environment.getExternalStorageState() != Environment.MEDIA_MOUNTED) {
-            return CreateExternalStorageDirResult(
-                null,
-                "ExternalStorage unavailable: ${Environment.getExternalStorageState()}"
-            )
-        }
-        val extDir = File(Environment.getExternalStorageDirectory(), dirName)
-        extDir.mkdir()
-        File(extDir, "test.txt").apply {
-            //TODO: check access by creating and deleting file
-            createNewFile()
-            delete()
-        }
-        return CreateExternalStorageDirResult(extDir, "")
-    } catch (e: Exception) {
-        return CreateExternalStorageDirResult(null, e.message)
-    }
-}

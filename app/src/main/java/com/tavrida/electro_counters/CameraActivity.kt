@@ -34,7 +34,10 @@ class CameraActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
     private val permissions =
-        listOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        listOf(
+            Manifest.permission.CAMERA,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE
+        )
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
@@ -56,10 +59,11 @@ class CameraActivity : AppCompatActivity() {
 
     var counterScanner: CounterScanner? = null
 
-    var framesRecorder: FramesRecorder? = null
+    private val storage by lazy { AppStorage(this, STORAGE_DIR) }
+    private var framesRecorder: FramesRecorder? = null
     private fun prepareFramesRecorder() {
         (framesRecorder == null).assert()
-        framesRecorder = prepareFramesRecorder(STORAGE_DIR, filesDir, enabled = loggingEnabled)
+        framesRecorder = FramesRecorder(storage, enabled = loggingEnabled)
     }
 
     private fun initLazyVars() {
