@@ -25,6 +25,7 @@ class AggregatingBoxGroupingDigitExtractor {
         val digitsCounts = currentDetections.map { listOf(DigitCount(it.digit, 1)) } +
                 prevDetections.map { it.digitsCounts }
         //TODO: boxes from detections have priority - should be in keptIndices
+        //create synthetic score by adding +1 to detected boxes and keep score unchanged for tracked boxes
         return groupBoxes(boxes, scores, .04f)
             .groupIndices.zip(digitsCounts)
             .groupBy({ it.first }, { it.second })
