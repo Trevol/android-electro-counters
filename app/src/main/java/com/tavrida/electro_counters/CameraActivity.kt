@@ -18,7 +18,8 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
+import com.tavrida.electro_counters.detection.tflite.ObjectDetectionResult
+import com.tavrida.electro_counters.detection.tflite.TfliteDetector
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.copy
@@ -203,7 +204,7 @@ class CameraActivity : AppCompatActivity() {
         private inline fun paint(classId: Int) =
             if (classId == screenId) screenPaint else digitBoxPaint
 
-        private inline fun TfliteDetector.ObjectDetection.isDigit() = classId != screenId
+        private inline fun ObjectDetectionResult.isDigit() = classId != screenId
 
         private fun Paint(
             color: Int,
@@ -226,7 +227,7 @@ class CameraActivity : AppCompatActivity() {
 
         fun drawDetections(
             srcBmp: Bitmap,
-            detections: List<TfliteDetector.ObjectDetection>,
+            detections: List<ObjectDetectionResult>,
             roiRect: Rect
         ) {
             val canvas = Canvas(srcBmp)

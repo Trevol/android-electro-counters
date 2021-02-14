@@ -1,4 +1,4 @@
-package com.tavrida.electro_counters.detection.tflite.new_detector
+package com.tavrida.electro_counters.detection.tflite
 
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.common.TensorOperator
