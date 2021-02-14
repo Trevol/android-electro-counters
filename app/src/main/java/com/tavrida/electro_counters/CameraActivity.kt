@@ -176,7 +176,7 @@ class CameraActivity : AppCompatActivity() {
         prev = current
 
         val (roiImage, roiRect) = roi.roiBitmap(inputBitmap)
-        val detections = detector.detect(roiImage, .2f)
+        val detections = detector.detect(roiImage, .4f)
 
         imageView_preview.post {
             val imageWithRoi = roi.draw(inputBitmap.copy())
