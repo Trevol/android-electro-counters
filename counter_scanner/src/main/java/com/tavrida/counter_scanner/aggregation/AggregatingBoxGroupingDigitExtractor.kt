@@ -3,17 +3,6 @@ package com.tavrida.counter_scanner.aggregation
 import com.tavrida.counter_scanner.detection.DigitDetectionResult
 
 class AggregatingBoxGroupingDigitExtractor {
-    /*
-    data class Digits_AggregatedDetections(
-    val digitsAtLocations: List<DigitAtLocation>,
-    val aggregatedDetections: List<AggregatedDetections>)
-    fun extract(currentDetections: Collection<DigitDetectionResult>, prevDetections: Collection<AggregatedDetections>):
-            Digits_AggregatedDetections {
-
-        val aggregatedDetections = aggregateDetections(currentDetections, prevDetections)
-        val digits = extractDigits(aggregatedDetections)
-        return Digits_AggregatedDetections(digits, aggregatedDetections)
-    }*/
 
     fun aggregateDetections(
         currentDetections: Collection<DigitDetectionResult>,
@@ -22,6 +11,7 @@ class AggregatingBoxGroupingDigitExtractor {
         val boxes = currentDetections.map { it.location } +
                 prevDetections.map { it.location }
         val scores = currentDetections.map { it.score } + prevDetections.map { it.score }
+        // val currentFirstScores = currentDetections.map { it.score + 1 } + prevDetections.map { it.score }
         val digitsCounts = currentDetections.map { listOf(DigitCount(it.digit, 1)) } +
                 prevDetections.map { it.digitsCounts }
         //TODO: boxes from detections have priority - should be in keptIndices
