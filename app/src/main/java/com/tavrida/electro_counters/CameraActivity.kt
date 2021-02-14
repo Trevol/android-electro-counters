@@ -18,13 +18,13 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.tavrida.electro_counters.appstorage.AppStorage
 import com.tavrida.electro_counters.detection.tflite.ObjectDetectionResult
 import com.tavrida.electro_counters.detection.tflite.TfliteDetector
 import com.tavrida.utils.camera.YuvToRgbConverter
 import com.tavrida.utils.compensateSensorRotation
 import com.tavrida.utils.copy
 import kotlinx.android.synthetic.main.activity_camera.*
-import java.io.File
 import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
@@ -36,7 +36,8 @@ import kotlin.random.Random
 class CameraActivity : AppCompatActivity() {
 
     private val executor = Executors.newSingleThreadExecutor()
-    private val permissions = listOf(Manifest.permission.CAMERA)
+    private val permissions =
+        listOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
@@ -55,7 +56,7 @@ class CameraActivity : AppCompatActivity() {
         return __bitmapBuffer!!
     }
 
-    val framesStorage by lazy { FramesStorage(File(filesDir, "frames")) }
+    val framesStorage by lazy { FramesStorage(AppStorage(this, STORAGE_DIR)) }
 
     val detector by lazy { detector(this) }
 
@@ -64,15 +65,19 @@ class CameraActivity : AppCompatActivity() {
         setContentView(R.layout.activity_camera)
         syncAnalysisUIState()
 
-        /*imageView_preview.setOnClickListener {
+        imageView_preview.setOnClickListener {
             startStopListener()
         }
-        buttonStartStop.setOnClickListener {
-            startStopListener()
-        }*/
 
-        framesStorage //trigger creation
-        detector
+        detector //create lazy
+        if (hasPermissions(this)) {
+            framesStorage //create lazy
+            bindCameraUseCases()
+        } else {
+            ActivityCompat.requestPermissions(
+                this, permissions.toTypedArray(), permissionsRequestCode
+            )
+        }
     }
 
     fun startStopListener() {
@@ -172,6 +177,14 @@ class CameraActivity : AppCompatActivity() {
                 .apply { yuvToRgbConverter.yuvToRgb(image.image!!, this) }
                 .compensateSensorRotation(image.imageInfo.rotationDegrees)
         }
+        if (stopped) {
+            imageView_preview.post {
+                imageView_preview.setImageBitmap(inputBitmap)
+            }
+            Thread.sleep(60) //slow down frame grabbing
+            return
+        }
+
         val current = System.currentTimeMillis()
         (current - prev).log2()
         prev = current
@@ -183,9 +196,8 @@ class CameraActivity : AppCompatActivity() {
             val imageWithRoi = roi.draw(inputBitmap.copy())
             vizUtils.drawDetections(imageWithRoi, detections, roiRect)
 
-            if (started) {
-                framesStorage.addFrame(imageWithRoi)
-            }
+            framesStorage.addFrame(inputBitmap, detections)
+
             imageView_preview.setImageBitmap(imageWithRoi)
         }
 
@@ -252,9 +264,7 @@ class CameraActivity : AppCompatActivity() {
         if (hasPermissions(this)) {
             bindCameraUseCases()
         } else {
-            ActivityCompat.requestPermissions(
-                this, permissions.toTypedArray(), permissionsRequestCode
-            )
+            finish()
         }
     }
 
@@ -265,6 +275,7 @@ class CameraActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == permissionsRequestCode && hasPermissions(this)) {
+            framesStorage
             bindCameraUseCases()
         } else {
             finish() // If we don't have the required permissions, we can't run
@@ -277,6 +288,8 @@ class CameraActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val STORAGE_DIR = "tavrida-electro-counters.detector"
+
         private var imageId = 0
         private val TAG = CameraActivity::class.java.simpleName + "_TAG"
 
