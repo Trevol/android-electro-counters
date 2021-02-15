@@ -46,12 +46,6 @@ class ScanResultDrawer {
                 location.centerX() + BARCODE_MARK_R, location.centerY() + BARCODE_MARK_R
             )
             canvas.drawRect(markRect, barckodeMarkPaint)
-            /*canvas.drawCircle(
-                location.exactCenterX(),
-                location.exactCenterY(),
-                BARCODE_MARK_R,
-                barckodeMarkPaint
-            )*/
         }
 
         return inputBitmap

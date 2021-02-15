@@ -4,7 +4,6 @@ import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.RectF
-import android.icu.util.TimeZone
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.aggregation.DigitAtLocation
@@ -114,11 +113,11 @@ class CounterScanner(
                 actualDetections = detectionTracker.track(prevGray, grayMat, actualDetections)
             }
 
-            val digitsAtBoxes = digitExtractor.extractDigits(actualDetections)
-            val readingInfo = readingInfoTracker.getInfo(digitsAtBoxes)
+            val digitsAtLocations = digitExtractor.extractDigits(actualDetections)
+            val readingInfo = readingInfoTracker.getInfo(digitsAtLocations)
             val consumerInfo = consumerIdTracker.consumerInfo()
             return CounterScaningResult(
-                digitsAtBoxes,
+                digitsAtLocations,
                 actualDetections,
                 readingInfo,
                 consumerInfo

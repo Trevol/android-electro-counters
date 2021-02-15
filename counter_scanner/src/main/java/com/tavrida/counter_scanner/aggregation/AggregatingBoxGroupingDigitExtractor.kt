@@ -4,6 +4,23 @@ import com.tavrida.counter_scanner.detection.DigitDetectionResult
 
 class AggregatingBoxGroupingDigitExtractor {
 
+    /*fun aggregateDetections(
+        currentDetections: Collection<DigitDetectionResult>,
+        prevDetections: Collection<AggregatedDetections>
+    ): List<AggregatedDetections> {
+        val boxes = currentDetections.map { it.location } +
+                prevDetections.map { it.location }
+        val scores = currentDetections.map { it.score } + prevDetections.map { it.score }
+        val digitsCounts = currentDetections.map { listOf(DigitCount(it.digit, 1)) } +
+                prevDetections.map { it.digitsCounts }
+        return groupBoxes(boxes, scores, .04f)
+            .groupIndices.zip(digitsCounts)
+            .groupBy({ it.first }, { it.second })
+            .map { index, digitsCountsByBox ->
+                AggregatedDetections(boxes[index], scores[index], merge(digitsCountsByBox))
+            }
+    }*/
+
     fun aggregateDetections(
         currentDetections: Collection<DigitDetectionResult>,
         prevDetections: Collection<AggregatedDetections>
@@ -11,12 +28,13 @@ class AggregatingBoxGroupingDigitExtractor {
         val boxes = currentDetections.map { it.location } +
                 prevDetections.map { it.location }
         val scores = currentDetections.map { it.score } + prevDetections.map { it.score }
-        // val currentFirstScores = currentDetections.map { it.score + 1 } + prevDetections.map { it.score }
+        val currentFirstScores =
+            currentDetections.map { it.score + 1 } + prevDetections.map { it.score }
         val digitsCounts = currentDetections.map { listOf(DigitCount(it.digit, 1)) } +
                 prevDetections.map { it.digitsCounts }
         //TODO: boxes from detections have priority - should be in keptIndices
         //create synthetic score by adding +1 to detected boxes and keep score unchanged for tracked boxes
-        return groupBoxes(boxes, scores, .04f)
+        return groupBoxes(boxes, currentFirstScores, .04f)
             .groupIndices.zip(digitsCounts)
             .groupBy({ it.first }, { it.second })
             .map { index, digitsCountsByBox ->
@@ -29,7 +47,7 @@ class AggregatingBoxGroupingDigitExtractor {
         .map { DigitAtLocation(it.digitWithMaxCount, it.location) }
 
     companion object {
-        const val minBoxesInGroup = 3
+        const val minBoxesInGroup = 7
 
         inline fun merge(digitsCountsByBox: List<List<DigitCount>>) =
             digitsCountsByBox.flatten()
