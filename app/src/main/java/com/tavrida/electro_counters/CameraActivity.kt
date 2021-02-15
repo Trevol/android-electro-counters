@@ -191,6 +191,7 @@ class CameraActivity : AppCompatActivity() {
 
         val (roiImage, roiRect) = roi.roiBitmap(inputBitmap)
         val detections = detector.detect(roiImage, .4f)
+            .remapToImage(roiRect)
 
         imageView_preview.post {
             val imageWithRoi = roi.draw(inputBitmap.copy())
@@ -202,6 +203,17 @@ class CameraActivity : AppCompatActivity() {
         }
 
     }
+
+    private fun List<ObjectDetectionResult>.remapToImage(
+        roiRect: Rect
+    ) = map { it.remapToImage(roiRect) }
+
+    private fun ObjectDetectionResult.remapToImage(
+        roi: Rect
+    ) = ObjectDetectionResult(location.remapToImage(roi), classId, score)
+
+    private fun RectF.remapToImage(roi: Rect) =
+        RectF(left + roi.left, top + roi.top, right + roi.left, bottom + roi.top)
 
     private object vizUtils {
         const val screenId = 11
@@ -230,13 +242,6 @@ class CameraActivity : AppCompatActivity() {
             this.textSize = textSize
         }
 
-        private fun remap(src: RectF, x: Int, y: Int) = RectF(
-            src.left + x,
-            src.top + y,
-            src.right + x,
-            src.bottom + y
-        )
-
         fun drawDetections(
             srcBmp: Bitmap,
             detections: List<ObjectDetectionResult>,
@@ -244,13 +249,12 @@ class CameraActivity : AppCompatActivity() {
         ) {
             val canvas = Canvas(srcBmp)
             for (d in detections) {
-                val remappedRect = remap(d.location, roiRect.left, roiRect.top)
-                canvas.drawRect(remappedRect, paint(d.classId))
+                canvas.drawRect(d.location, paint(d.classId))
                 if (d.isDigit()) {
                     canvas.drawText(
                         (d.classId - 1).toString(),
-                        remappedRect.left + 2,
-                        remappedRect.top - 2,
+                        d.location.left + 2,
+                        d.location.top - 2,
                         digitPaint
                     )
                 }

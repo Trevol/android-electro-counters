@@ -57,13 +57,16 @@ class FramesStorage(storage: AppStorage, subDir: String = "frames") {
         }
         val paddedPos = framesPos.zeroPad(4)
         val baseName = "${sessionId}_${paddedPos}"
-        frame.saveAsJpeg(File(storageDir, "$baseName.jpg"), quality = 75)
-        detections.toJsonString().save(File(storageDir, "${baseName}_detections.json"))
+        File(storageDir, "$baseName.jpg")
+            .let { frame.saveAsJpeg(it, JPEG_QUALITY) }
+        File(storageDir, "${baseName}_detections.json")
+            .let { detections.toJsonString().save(it) }
         framesPos++
     }
 
 
     private companion object {
+        const val JPEG_QUALITY = 75
         private const val TIMESTAMP_FORMAT = "yyyyMMddHHmmss"
         private fun createTimestamp() =
             SimpleDateFormat(TIMESTAMP_FORMAT, Locale.US).format(System.currentTimeMillis())
@@ -78,7 +81,7 @@ class FramesStorage(storage: AppStorage, subDir: String = "frames") {
     }
 }
 
-private object RectFSerializer: KSerializer<RectF>{
+private object RectFSerializer : KSerializer<RectF> {
     override val descriptor: SerialDescriptor
         get() = PrimitiveSerialDescriptor("", kind = PrimitiveKind.FLOAT)
 
