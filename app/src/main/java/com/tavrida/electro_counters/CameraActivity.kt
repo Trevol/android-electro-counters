@@ -4,8 +4,6 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.Color
-import android.graphics.Paint
 import android.os.Bundle
 import android.util.Size
 import android.view.Surface
@@ -18,19 +16,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.counter_scanner.scanning.CounterScaningResult
-import com.tavrida.counter_scanner.scanning.CounterScanner
-import com.tavrida.counter_scanner.scanning.DetectionRoi
-import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
-import com.tavrida.electro_counters.drawing.ScanResultDrawer
-import com.tavrida.utils.assert
 import kotlinx.android.synthetic.main.activity_camera.*
-import org.opencv.android.OpenCVLoader
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 class CameraActivity : AppCompatActivity() {
-
     private val executor = Executors.newSingleThreadExecutor()
     private val permissions =
         listOf(
@@ -44,41 +35,10 @@ class CameraActivity : AppCompatActivity() {
     //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
     private val cameraRes = Size(640, 480)
 
-    private var scanningStopped = true
+    private val controller by lazy { CameraActivityController(this) }
 
-    private inline val scanningStarted get() = !scanningStopped
-    private val cameraImageConverter by lazy { CameraImageConverter2(this) }
-    private val counterScannerProvider by lazy { CounterScannerProvider2() }
-
-    private val detectorRoi = DetectionRoi(Size(400, 180))
-
-    private object roiPaint {
-        val started = Paint().apply {
-            color = Color.rgb(0xFF, 0xC1, 0x07) //255,193,7 Color.rgb(0, 255, 0) //0xFFC107
-            style = Paint.Style.STROKE
-            strokeWidth = 3f
-        }
-        val stopped = Paint().apply {
-            // color = Color.rgb(125, 63, 7) //255-130,193-130,7 Color.rgb(0, 255, 0) //0xFFC107
-            color = Color.argb(55, 0xFF, 0xC1, 0x07)
-            style = Paint.Style.STROKE
-            strokeWidth = 3f
-        }
-    }
-
-    var counterScanner: CounterScanner? = null
-
-    private val storage by lazy { AppStorage(this, STORAGE_DIR) }
-    private var framesRecorder: FramesRecorder? = null
-    private fun prepareFramesRecorder() {
-        (framesRecorder == null).assert()
-        framesRecorder = FramesRecorder(storage, enabled = loggingEnabled)
-    }
-
-    private fun initLazyVars() {
-        //init lazies
-        cameraImageConverter
-        counterScannerProvider
+    private inline fun initController() {
+        controller
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +48,7 @@ class CameraActivity : AppCompatActivity() {
 
         if (hasPermissions(this)) {
             bindCameraUseCases()
-            prepareFramesRecorder()
+            initController()
         } else {
             ActivityCompat.requestPermissions(
                 this, permissions.toTypedArray(), permissionsRequestCode
@@ -98,47 +58,32 @@ class CameraActivity : AppCompatActivity() {
         imageView_preview.setOnClickListener {
             startStopListener()
         }
-        recordingSwitch.isChecked = loggingEnabled
+        recordingSwitch.isChecked = controller.recordingEnabled
         recordingSwitch.setOnCheckedChangeListener { _, isChecked ->
-            loggingEnabled = isChecked
-            framesRecorder?.enabled = loggingEnabled
+            controller.recordingEnabled = isChecked
         }
-        initLazyVars()
     }
 
     override fun onDestroy() {
-        stopScanner()
+        controller.stopScanner()
         super.onDestroy()
     }
 
     override fun onPause() {
-        scanningStopped = true
-        stopScanner()
+        controller.stopScanner()
         super.onPause()
     }
 
     fun startStopListener() {
-        val stopped = !scanningStopped
-        if (stopped) {
-            stopScanner()
-        } else {
-            counterScanner = counterScannerProvider.createScanner(this, detectorRoi)
-        }
-        // update flag at the end
-        // because vars are accessed in separate thread (analyzeImage)
-        this.scanningStopped = stopped
-        framesRecorder!!.toggleSession(scanningStarted)
+        controller.toggleScanning()
         syncAnalysisUIState()
     }
 
-    private fun stopScanner() {
-        counterScanner?.stop()
-        counterScanner = null
-    }
 
     private fun syncAnalysisUIState() {
-        view_TapToStart.visibility = if (scanningStopped) View.VISIBLE else View.INVISIBLE
-        val infoVisibility = if (scanningStopped) View.INVISIBLE else View.VISIBLE
+        view_TapToStart.visibility =
+            if (controller.scanningStopped) View.VISIBLE else View.INVISIBLE
+        val infoVisibility = if (controller.scanningStopped) View.INVISIBLE else View.VISIBLE
         textView_timings.visibility = infoVisibility
         textView_timings.text = ""
         textView_readings.visibility = infoVisibility
@@ -181,55 +126,27 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    var prevAnalyzeImageCallMs: Long? = null
-    inline fun measureAnalyzeImageCall(): Long {
-        val currentAnalyzeImageCallMs = System.currentTimeMillis()
-        val callDuration =
-            currentAnalyzeImageCallMs - (prevAnalyzeImageCallMs ?: currentAnalyzeImageCallMs)
-        prevAnalyzeImageCallMs = currentAnalyzeImageCallMs
-        return callDuration
-    }
-
     fun analyzeImage(image: ImageProxy) {
-        val bitmap = image.use {
-            if (scanningStopped) {
-                Thread.sleep(150) //slow down fps in stopped mode
-            }
-            cameraImageConverter.convert(it)
-        }
-
-        if (scanningStarted) {
-            framesRecorder!!.addFrame(bitmap)
-            val result = counterScanner!!.scan(bitmap)
-            detectorRoi.draw(bitmap, roiPaint.started)
-            showDetectionResults(bitmap, result, measureAnalyzeImageCall())
-        } else {
-            //simply show original frame
-            imageView_preview.post {
-                detectorRoi.draw(bitmap, roiPaint.stopped)
-                imageView_preview.setImageBitmap(bitmap)
-            }
-        }
+        val result = controller.analyzeImage(image)
+        showResult(result)
     }
 
-    private fun showDetectionResults(
-        inputBitmap: Bitmap,
-        scanResult: CounterScaningResult,
-        duration: Long
-    ) {
-        if (scanningStopped) {
-            return
-        }
+    private fun showResult(result: CameraActivityController.AnalyzeImageResult) =
         imageView_preview.post {
-            val readings = scanResult.readingInfo?.reading
-            val imageWithDrawings = ScanResultDrawer().draw(inputBitmap, scanResult)
-            textView_timings.text = "${duration}ms  ${inputBitmap.width}x${inputBitmap.height}"
-            imageView_preview.setImageBitmap(imageWithDrawings)
+            imageView_preview.setImageBitmap(result.displayImage)
+            if (result.scanResultAndDuration != null) {
+                val (scanResult, duration) = result.scanResultAndDuration
+                val readings = scanResult.readingInfo?.reading
+                textView_timings.text =
+                    "${duration}ms  ${result.displayImage.width}x${result.displayImage.height}"
 
-            textView_readings.text = if (readings.isNullOrEmpty()) "" else readings
-            textView_clientId.text = scanResult.consumerInfo?.consumerId
+                textView_readings.text = readings
+                textView_clientId.text = scanResult.consumerInfo?.consumerId
+            } else {
+                textView_readings.text = ""
+                textView_clientId.text = ""
+            }
         }
-    }
 
 
     override fun onResume() {
@@ -246,7 +163,7 @@ class CameraActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == permissionsRequestCode && hasPermissions(this)) {
             bindCameraUseCases()
-            prepareFramesRecorder()
+            initController()
         } else {
             finish() // If we don't have the required permissions, we can't run
         }
@@ -257,16 +174,6 @@ class CameraActivity : AppCompatActivity() {
     }
 
     companion object {
-        init {
-            OpenCVLoader.initDebug()
-        }
-
-        //global var - value should be preserved between activity recreations
-        var loggingEnabled = false
-
-        const val STORAGE_DIR = "tavrida-electro-counters"
-        private val TAG = CameraActivity::class.java.simpleName
-
         inline fun View.afterMeasured(crossinline block: () -> Unit) {
             viewTreeObserver.addOnGlobalLayoutListener(object :
                 ViewTreeObserver.OnGlobalLayoutListener {
