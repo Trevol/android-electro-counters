@@ -173,6 +173,9 @@ class CameraActivity : AppCompatActivity() {
     @SuppressLint("UnsafeExperimentalUsageError")
     fun analyzeImage(image: ImageProxy) {
         val inputBitmap = image.use {
+            if (stopped) {
+                Thread.sleep(100) //slow down frame grabbing to 10fps
+            }
             getBitmapBuffer(image.width, image.height)
                 .apply { yuvToRgbConverter.yuvToRgb(image.image!!, this) }
                 .compensateSensorRotation(image.imageInfo.rotationDegrees)
@@ -181,7 +184,6 @@ class CameraActivity : AppCompatActivity() {
             imageView_preview.post {
                 imageView_preview.setImageBitmap(inputBitmap)
             }
-            Thread.sleep(60) //slow down frame grabbing
             return
         }
 
