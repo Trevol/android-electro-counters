@@ -4,7 +4,7 @@ import com.tavrida.counter_scanner.detection.DigitDetectionResult
 
 class AggregatingBoxGroupingDigitExtractor {
 
-    /*fun aggregateDetections(
+    fun aggregateDetections(
         currentDetections: Collection<DigitDetectionResult>,
         prevDetections: Collection<AggregatedDetections>
     ): List<AggregatedDetections> {
@@ -19,9 +19,9 @@ class AggregatingBoxGroupingDigitExtractor {
             .map { index, digitsCountsByBox ->
                 AggregatedDetections(boxes[index], scores[index], merge(digitsCountsByBox))
             }
-    }*/
+    }
 
-    fun aggregateDetections(
+    /*fun aggregateDetections(
         currentDetections: Collection<DigitDetectionResult>,
         prevDetections: Collection<AggregatedDetections>
     ): List<AggregatedDetections> {
@@ -40,7 +40,7 @@ class AggregatingBoxGroupingDigitExtractor {
             .map { index, digitsCountsByBox ->
                 AggregatedDetections(boxes[index], scores[index], merge(digitsCountsByBox))
             }
-    }
+    }*/
 
     fun extractDigits(detections: Collection<AggregatedDetections>) = detections
         .filter { it.totalCount >= minBoxesInGroup }
