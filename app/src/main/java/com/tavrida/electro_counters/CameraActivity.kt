@@ -27,7 +27,6 @@ import org.opencv.android.OpenCVLoader
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
-import kotlin.time.ExperimentalTime
 
 
 class CameraActivity : AppCompatActivity() {
@@ -47,8 +46,14 @@ class CameraActivity : AppCompatActivity() {
     private val cameraImageConverter by lazy { CameraImageConverter2(this) }
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
     private val detectorRoi = DetectionRoi(Size(400, 180))
-    private val detectorRoiPaint = Paint().apply {
+    private val startedDetectorRoiPaint = Paint().apply {
         color = Color.rgb(0xFF, 0xC1, 0x07) //255,193,7 Color.rgb(0, 255, 0) //0xFFC107
+        style = Paint.Style.STROKE
+        strokeWidth = 3f
+    }
+    private val stoppedDetectorRoiPaint = Paint().apply {
+        // color = Color.rgb(125, 63, 7) //255-130,193-130,7 Color.rgb(0, 255, 0) //0xFFC107
+        color = Color.argb(55, 0xFF, 0xC1, 0x07)
         style = Paint.Style.STROKE
         strokeWidth = 3f
     }
@@ -182,16 +187,22 @@ class CameraActivity : AppCompatActivity() {
     }
 
     fun analyzeImage(image: ImageProxy) {
-        val bitmap = image.use { cameraImageConverter.convert(it) }
+        val bitmap = image.use {
+            if (stopped) {
+                Thread.sleep(150) //slow down fps in stopped mode
+            }
+            cameraImageConverter.convert(it)
+        }
 
         if (started) {
             framesRecorder!!.addFrame(bitmap)
             val result = counterScanner!!.scan(bitmap)
-            detectorRoi.draw(bitmap, detectorRoiPaint)
+            detectorRoi.draw(bitmap, startedDetectorRoiPaint)
             showDetectionResults(bitmap, result, measureAnalyzeImageCall())
         } else {
             //simply show original frame
             imageView_preview.post {
+                detectorRoi.draw(bitmap, stoppedDetectorRoiPaint)
                 imageView_preview.setImageBitmap(bitmap)
             }
         }
