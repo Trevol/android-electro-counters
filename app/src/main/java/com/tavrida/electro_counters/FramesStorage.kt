@@ -80,19 +80,3 @@ class FramesStorage(storage: AppStorage, subDir: String = "frames") {
         }
     }
 }
-
-private object RectFSerializer : KSerializer<RectF> {
-    override val descriptor: SerialDescriptor
-        get() = PrimitiveSerialDescriptor("", kind = PrimitiveKind.FLOAT)
-
-    override fun deserialize(decoder: Decoder): RectF {
-        // MapSerializer()
-        TODO("Not yet implemented")
-    }
-
-    override fun serialize(encoder: Encoder, value: RectF) {
-        TODO("Not yet implemented")
-    }
-
-}
-// @file:UseSerializers
