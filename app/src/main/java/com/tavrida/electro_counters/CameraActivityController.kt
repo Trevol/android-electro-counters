@@ -86,13 +86,12 @@ class CameraActivityController(val context: Context) {
     }
 
     fun analyzeImage(image: ImageProxy): AnalyzeImageResult {
+        // make local instance - val can be updated by UI thread
         val scanner = counterScanner
         val bitmap = image.use {
             cameraImageConverter.convert(it)
         }
         if (scanningStopped) {
-            TODO("Move Thread.sleep(150) outside of controller")
-            Thread.sleep(150) //slow down fps in stopped mode
             return AnalyzeImageResult(detectorRoi.draw(bitmap, roiPaint.stopped), null)
         }
 

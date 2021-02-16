@@ -3,7 +3,6 @@ package com.tavrida.electro_counters
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.util.Size
 import android.view.Surface
@@ -15,7 +14,6 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.counter_scanner.scanning.CounterScaningResult
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -44,7 +42,7 @@ class CameraActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
-        syncAnalysisUIState()
+        updateUI()
 
         if (hasPermissions(this)) {
             bindCameraUseCases()
@@ -56,7 +54,7 @@ class CameraActivity : AppCompatActivity() {
         }
 
         imageView_preview.setOnClickListener {
-            startStopListener()
+            toggleScanning()
         }
         recordingSwitch.isChecked = controller.recordingEnabled
         recordingSwitch.setOnCheckedChangeListener { _, isChecked ->
@@ -74,13 +72,13 @@ class CameraActivity : AppCompatActivity() {
         super.onPause()
     }
 
-    fun startStopListener() {
+    private fun toggleScanning() {
         controller.toggleScanning()
-        syncAnalysisUIState()
+        updateUI()
     }
 
 
-    private fun syncAnalysisUIState() {
+    private fun updateUI() {
         view_TapToStart.visibility =
             if (controller.scanningStopped) View.VISIBLE else View.INVISIBLE
         val infoVisibility = if (controller.scanningStopped) View.INVISIBLE else View.VISIBLE
@@ -126,7 +124,14 @@ class CameraActivity : AppCompatActivity() {
         }, ContextCompat.getMainExecutor(this))
     }
 
-    fun analyzeImage(image: ImageProxy) {
+    private inline fun slowdownIfStopped() {
+        if (controller.scanningStopped) {
+            Thread.sleep(100)
+        }
+    }
+
+    private fun analyzeImage(image: ImageProxy) {
+        slowdownIfStopped()
         val result = controller.analyzeImage(image)
         showResult(result)
     }
@@ -152,7 +157,7 @@ class CameraActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         bindCameraUseCases()
-        syncAnalysisUIState()
+        updateUI()
     }
 
     override fun onRequestPermissionsResult(
