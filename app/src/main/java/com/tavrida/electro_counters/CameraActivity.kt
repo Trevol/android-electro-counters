@@ -3,7 +3,9 @@ package com.tavrida.electro_counters
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
-import android.graphics.*
+import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.Paint
 import android.os.Bundle
 import android.util.Size
 import android.view.Surface
@@ -11,14 +13,13 @@ import android.view.View
 import android.view.ViewTreeObserver
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
-import androidx.camera.core.Camera
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
-import com.tavrida.counter_scanner.scanning.DetectionRoi
-import com.tavrida.counter_scanner.scanning.CounterScanner
 import com.tavrida.counter_scanner.scanning.CounterScaningResult
+import com.tavrida.counter_scanner.scanning.CounterScanner
+import com.tavrida.counter_scanner.scanning.DetectionRoi
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import com.tavrida.utils.assert
@@ -27,7 +28,6 @@ import org.opencv.android.OpenCVLoader
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
-
 
 class CameraActivity : AppCompatActivity() {
 
@@ -40,22 +40,26 @@ class CameraActivity : AppCompatActivity() {
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
-    private var stopped = true
-    private val started get() = !stopped
+
+    private var scanningStopped = true
+    private inline val scanningStarted get() = !scanningStopped
 
     private val cameraImageConverter by lazy { CameraImageConverter2(this) }
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
     private val detectorRoi = DetectionRoi(Size(400, 180))
-    private val startedDetectorRoiPaint = Paint().apply {
-        color = Color.rgb(0xFF, 0xC1, 0x07) //255,193,7 Color.rgb(0, 255, 0) //0xFFC107
-        style = Paint.Style.STROKE
-        strokeWidth = 3f
-    }
-    private val stoppedDetectorRoiPaint = Paint().apply {
-        // color = Color.rgb(125, 63, 7) //255-130,193-130,7 Color.rgb(0, 255, 0) //0xFFC107
-        color = Color.argb(55, 0xFF, 0xC1, 0x07)
-        style = Paint.Style.STROKE
-        strokeWidth = 3f
+
+    private object roiPaint {
+        val started = Paint().apply {
+            color = Color.rgb(0xFF, 0xC1, 0x07) //255,193,7 Color.rgb(0, 255, 0) //0xFFC107
+            style = Paint.Style.STROKE
+            strokeWidth = 3f
+        }
+        val stopped = Paint().apply {
+            // color = Color.rgb(125, 63, 7) //255-130,193-130,7 Color.rgb(0, 255, 0) //0xFFC107
+            color = Color.argb(55, 0xFF, 0xC1, 0x07)
+            style = Paint.Style.STROKE
+            strokeWidth = 3f
+        }
     }
 
     //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
@@ -108,13 +112,13 @@ class CameraActivity : AppCompatActivity() {
     }
 
     override fun onPause() {
-        stopped = true
+        scanningStopped = true
         stopScanner()
         super.onPause()
     }
 
     fun startStopListener() {
-        val stopped = !stopped
+        val stopped = !scanningStopped
         if (stopped) {
             stopScanner()
         } else {
@@ -122,8 +126,8 @@ class CameraActivity : AppCompatActivity() {
         }
         // update flag at the end
         // because vars are accessed in separate thread (analyzeImage)
-        this.stopped = stopped
-        framesRecorder!!.toggleSession(started)
+        this.scanningStopped = stopped
+        framesRecorder!!.toggleSession(scanningStarted)
         syncAnalysisUIState()
     }
 
@@ -133,8 +137,8 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun syncAnalysisUIState() {
-        view_TapToStart.visibility = if (stopped) View.VISIBLE else View.INVISIBLE
-        val infoVisibility = if (stopped) View.INVISIBLE else View.VISIBLE
+        view_TapToStart.visibility = if (scanningStopped) View.VISIBLE else View.INVISIBLE
+        val infoVisibility = if (scanningStopped) View.INVISIBLE else View.VISIBLE
         textView_timings.visibility = infoVisibility
         textView_timings.text = ""
         textView_readings.visibility = infoVisibility
@@ -188,21 +192,21 @@ class CameraActivity : AppCompatActivity() {
 
     fun analyzeImage(image: ImageProxy) {
         val bitmap = image.use {
-            if (stopped) {
+            if (scanningStopped) {
                 Thread.sleep(150) //slow down fps in stopped mode
             }
             cameraImageConverter.convert(it)
         }
 
-        if (started) {
+        if (scanningStarted) {
             framesRecorder!!.addFrame(bitmap)
             val result = counterScanner!!.scan(bitmap)
-            detectorRoi.draw(bitmap, startedDetectorRoiPaint)
+            detectorRoi.draw(bitmap, roiPaint.started)
             showDetectionResults(bitmap, result, measureAnalyzeImageCall())
         } else {
             //simply show original frame
             imageView_preview.post {
-                detectorRoi.draw(bitmap, stoppedDetectorRoiPaint)
+                detectorRoi.draw(bitmap, roiPaint.stopped)
                 imageView_preview.setImageBitmap(bitmap)
             }
         }
@@ -213,15 +217,13 @@ class CameraActivity : AppCompatActivity() {
         scanResult: CounterScaningResult,
         duration: Long
     ) {
-        if (stopped) {
+        if (scanningStopped) {
             return
         }
         imageView_preview.post {
-            val timingTxt = "${duration}ms"
-
             val readings = scanResult.readingInfo?.reading
             val imageWithDrawings = ScanResultDrawer().draw(inputBitmap, scanResult)
-            textView_timings.text = "$timingTxt  ${inputBitmap.width}x${inputBitmap.height}"
+            textView_timings.text = "${duration}ms  ${inputBitmap.width}x${inputBitmap.height}"
             imageView_preview.setImageBitmap(imageWithDrawings)
 
             textView_readings.text = if (readings.isNullOrEmpty()) "" else readings
@@ -293,10 +295,6 @@ class CameraActivity : AppCompatActivity() {
                     .build()
             camera.cameraControl.startFocusAndMetering(focusMeteringAction)
         }
-
-
-        fun Any.padStartEx(length: Int, padChar: Char) = toString().padStart(length, padChar)
-
     }
 }
 

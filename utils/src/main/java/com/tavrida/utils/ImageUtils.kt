@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.graphics.Point
 import android.graphics.PointF
+import android.util.Size
 
 import java.io.File
 import java.io.FileOutputStream
@@ -20,6 +21,8 @@ fun Bitmap.compensateSensorRotation(sensorRotationDegrees: Int) =
         )
 
 fun Bitmap.copy(isMutable: Boolean = true) = copy(this.config, isMutable)
+
+inline val Bitmap.size get() = Size(width, height)
 
 fun Bitmap.center() = Point(width / 2, height / 2)
 fun Bitmap.exactCenter() = PointF(width / 2f, height / 2f)
