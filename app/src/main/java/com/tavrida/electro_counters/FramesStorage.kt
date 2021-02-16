@@ -1,21 +1,12 @@
 package com.tavrida.electro_counters
 
 import android.graphics.Bitmap
-import android.graphics.RectF
 import com.tavrida.electro_counters.appstorage.AppStorage
 import com.tavrida.electro_counters.detection.tflite.ObjectDetectionResult
 import com.tavrida.utils.assert
 import com.tavrida.utils.saveAsJpeg
 import com.tavrida.utils.zeroPad
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.UseSerializers
-import kotlinx.serialization.builtins.MapSerializer
-import kotlinx.serialization.descriptors.PrimitiveKind
-import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
-import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.Json
 import java.io.File
 import java.io.FileOutputStream
