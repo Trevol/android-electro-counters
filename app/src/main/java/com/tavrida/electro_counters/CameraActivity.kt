@@ -41,11 +41,15 @@ class CameraActivity : AppCompatActivity() {
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
 
-    private var scanningStopped = true
-    private inline val scanningStarted get() = !scanningStopped
+    //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
+    private val cameraRes = Size(640, 480)
 
+    private var scanningStopped = true
+
+    private inline val scanningStarted get() = !scanningStopped
     private val cameraImageConverter by lazy { CameraImageConverter2(this) }
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
+
     private val detectorRoi = DetectionRoi(Size(400, 180))
 
     private object roiPaint {
@@ -61,10 +65,6 @@ class CameraActivity : AppCompatActivity() {
             strokeWidth = 3f
         }
     }
-
-    //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
-    // private val cameraRes = Size(800, 600)
-    private val cameraRes = Size(640, 480)
 
     var counterScanner: CounterScanner? = null
 
