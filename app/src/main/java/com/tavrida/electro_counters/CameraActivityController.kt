@@ -86,7 +86,7 @@ class CameraActivityController(val context: Context) {
     }
 
     fun analyzeImage(image: ImageProxy): AnalyzeImageResult {
-        // make local instance - val can be updated by UI thread
+        // make local instance - because val can be updated by UI thread
         val scanner = counterScanner
         val bitmap = image.use {
             cameraImageConverter.convert(it)
