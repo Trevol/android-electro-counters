@@ -1,6 +1,6 @@
 package com.tavrida.utils.serialization
 
-import android.graphics.RectF
+import android.graphics.Rect
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.descriptors.buildClassSerialDescriptor
@@ -10,38 +10,38 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 
-object RectFSerializer : KSerializer<RectF> {
+object RectSerializer : KSerializer<Rect> {
     private const val LEFT = 0
     private const val TOP = 1
     private const val RIGHT = 2
     private const val BOTTOM = 3
 
-    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("RectF") {
-        element<Float>("left")
-        element<Float>("top")
-        element<Float>("right")
-        element<Float>("bottom")
+    override val descriptor: SerialDescriptor = buildClassSerialDescriptor("Rect") {
+        element<Int>("left")
+        element<Int>("top")
+        element<Int>("right")
+        element<Int>("bottom")
     }
 
-    override fun deserialize(decoder: Decoder): RectF {
+    override fun deserialize(decoder: Decoder): Rect {
         return decoder.decodeStructure(descriptor) {
-            val r = RectF()
+            val r = Rect()
 
             while (true) {
                 when (val index = decodeElementIndex(descriptor)) {
-                    LEFT -> r.left = decodeFloatElement(
+                    LEFT -> r.left = decodeIntElement(
                         descriptor,
                         index
                     )
-                    TOP -> r.top = decodeFloatElement(
+                    TOP -> r.top = decodeIntElement(
                         descriptor,
                         index
                     )
-                    RIGHT -> r.right = decodeFloatElement(
+                    RIGHT -> r.right = decodeIntElement(
                         descriptor,
                         index
                     )
-                    BOTTOM -> r.bottom = decodeFloatElement(
+                    BOTTOM -> r.bottom = decodeIntElement(
                         descriptor,
                         index
                     )
@@ -54,12 +54,13 @@ object RectFSerializer : KSerializer<RectF> {
 
     }
 
-    override fun serialize(encoder: Encoder, value: RectF) {
+    override fun serialize(encoder: Encoder, value: Rect) {
         val structure = encoder.beginStructure(descriptor)
-        structure.encodeFloatElement(descriptor, LEFT, value.left)
-        structure.encodeFloatElement(descriptor, TOP, value.top)
-        structure.encodeFloatElement(descriptor, RIGHT, value.right)
-        structure.encodeFloatElement(descriptor, BOTTOM, value.bottom)
+        structure.encodeIntElement(descriptor, LEFT, value.left)
+        structure.encodeIntElement(descriptor, TOP, value.top)
+        structure.encodeIntElement(descriptor, RIGHT, value.right)
+        structure.encodeIntElement(descriptor, BOTTOM, value.bottom)
         structure.endStructure(descriptor)
     }
+
 }

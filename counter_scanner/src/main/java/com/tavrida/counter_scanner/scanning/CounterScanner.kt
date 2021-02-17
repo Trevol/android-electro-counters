@@ -18,7 +18,6 @@ import org.opencv.imgproc.Imgproc
 import java.io.Closeable
 import java.util.*
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.IllegalStateException
 import kotlin.collections.ArrayList
 import kotlin.concurrent.withLock
 
@@ -168,23 +167,6 @@ class CounterScanner(
                 //-1 should be last item (with lastIndex)
                 get(lastIndex + 1 + index)
             }
-    }
-}
-
-data class CounterScaningResult(
-    val digitsAtLocations: List<DigitAtLocation>,
-    val aggregatedDetections: List<AggregatedDetections>,
-    val readingInfo: ReadingInfo?,
-    val consumerInfo: ConsumerInfo?
-) {
-    data class ReadingInfo(val reading: String, val msOfStability: Long)
-    data class ConsumerInfo(
-        val consumerId: String,
-        val barcodeLocation: Rect?
-    )
-
-    companion object {
-        fun empty() = CounterScaningResult(listOf(), listOf(), null, null)
     }
 }
 

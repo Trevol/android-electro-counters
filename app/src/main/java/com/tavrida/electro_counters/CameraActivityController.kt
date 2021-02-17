@@ -108,13 +108,15 @@ class CameraActivityController(val context: Context) {
         }
 
         val imageWithId = ImageWithId(bitmap, frameId.next())
-        framesRecorder.record(bitmap)
+        framesRecorder.record(imageWithId)
         val result = safeScannerInstance!!.scan(bitmap)
+        val duration = analyzeCycles.duration()
+        framesRecorder.record(imageWithId.id, result, duration)
 
         detectorRoi.draw(bitmap, roiPaint.started)
         ScanResultDrawer().draw(bitmap, result)
 
-        return AnalyzeImageResult(bitmap, result to analyzeCycles.duration())
+        return AnalyzeImageResult(bitmap, result to duration)
     }
 
 
