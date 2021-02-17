@@ -1,17 +1,15 @@
 package com.tavrida.electro_counters
 
 import android.graphics.Bitmap
-import android.os.Environment
+import com.tavrida.utils.Timestamp
 import com.tavrida.utils.assert
 import com.tavrida.utils.saveAsJpeg
 import com.tavrida.utils.zeroPad
 import java.io.File
-import java.lang.Exception
-import java.text.SimpleDateFormat
-import java.util.*
 
 class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled: Boolean) {
     private val framesDir = File(storage.root, subDir)
+    private var sessionDir: File? = null
 
     private var framesPos = 0
     private var sessionId = ""
@@ -27,8 +25,8 @@ class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled
 
     private fun startSession() {
         (!started).assert()
+        sessionId = Timestamp.current()
         framesDir.mkdirs()
-        sessionId = createTimestamp()
         started = true
     }
 
@@ -39,7 +37,7 @@ class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled
         started = false
     }
 
-    fun addFrame(frame: Bitmap) {
+    fun record(frame: Bitmap) {
         if (!enabled) {
             return
         }
@@ -60,25 +58,7 @@ class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled
 
     private companion object {
         private const val JPEG_QUALITY = 75
-        private const val TIMESTAMP_FORMAT = "yyyyMMddHHmmss"
-        private fun createTimestamp() =
-            SimpleDateFormat(TIMESTAMP_FORMAT, Locale.US).format(System.currentTimeMillis())
     }
 
 }
-
-/*fun prepareFramesRecorder(
-    externalStorageDir: String,
-    internalStorageDir: File,
-    subDir: String = "frames",
-    enabled: Boolean = false
-): FramesRecorder {
-    //try to external storage
-    val (storageDir, _) = createExternalStorageDir(externalStorageDir)
-    if (storageDir != null) {
-        return FramesRecorder(storageDir, subDir, enabled)
-    }
-    // fallback to internal files storage
-    return FramesRecorder(internalStorageDir, subDir, enabled)
-}*/
 

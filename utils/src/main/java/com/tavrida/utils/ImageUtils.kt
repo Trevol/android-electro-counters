@@ -11,8 +11,7 @@ import java.io.FileOutputStream
 
 fun Bitmap.compensateSensorRotation(sensorRotationDegrees: Int) =
     if (sensorRotationDegrees == 0) {
-        // this.copy()
-        this
+        this.copy()
     } else
         Bitmap.createBitmap(
             this, 0, 0, this.width, this.height,

@@ -136,7 +136,7 @@ class CameraActivity : AppCompatActivity() {
         showResult(result)
     }
 
-    private fun showResult(result: CameraActivityController.AnalyzeImageResult) =
+    private fun showResult(result: CameraActivityController.AnalyzeImageResult) {
         imageView_preview.post {
             imageView_preview.setImageBitmap(result.displayImage)
             if (result.scanResultAndDuration != null) {
@@ -152,7 +152,7 @@ class CameraActivity : AppCompatActivity() {
                 textView_clientId.text = ""
             }
         }
-
+    }
 
     override fun onResume() {
         super.onResume()
