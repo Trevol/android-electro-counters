@@ -35,10 +35,7 @@ class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled
         createSessionDirIfNeeded()
         framesPos.zeroPad(FRAME_POS_LEN)
             .let { paddedPos ->
-                "${sessionId}_${paddedPos}.jpg"
-            }
-            .let { fn ->
-                File(sessionDir, fn)
+                File(sessionDir, "${paddedPos}.jpg")
             }.also { f ->
                 frame.saveAsJpeg(f, JPEG_QUALITY)
             }

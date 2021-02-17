@@ -63,7 +63,14 @@ class CameraActivityController(val context: Context) {
     private val appLog = AppLog(storage)
 
     init {
-        appLog.deviceInfo()
+        logDeviceInfo()
+    }
+
+    private fun logDeviceInfo() {
+        if (!deviceInfoLogged) {
+            appLog.deviceInfo()
+            deviceInfoLogged = true
+        }
     }
 
     fun stopScanner() {
@@ -116,6 +123,7 @@ class CameraActivityController(val context: Context) {
             OpenCVLoader.initDebug()
         }
 
+        var deviceInfoLogged = false
         private const val STORAGE_DIR = "tavrida-electro-counters"
     }
 }

@@ -14,6 +14,7 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
+import com.tavrida.utils.assert
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -33,6 +34,8 @@ class CameraActivity : AppCompatActivity() {
     //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
     private val cameraRes = Size(640, 480)
 
+    private var initialized = false
+
     private val controller by lazy { CameraActivityController(this) }
 
     private inline fun initController() {
@@ -42,17 +45,22 @@ class CameraActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera)
-        updateUI()
 
         if (hasPermissions(this)) {
-            bindCameraUseCases()
-            initController()
+            initActivity()
         } else {
             ActivityCompat.requestPermissions(
                 this, permissions.toTypedArray(), permissionsRequestCode
             )
         }
+    }
 
+    private fun initActivity() {
+        if (initialized) {
+            return
+        }
+        initController()
+        updateUI()
         imageView_preview.setOnClickListener {
             toggleScanning()
         }
@@ -60,25 +68,35 @@ class CameraActivity : AppCompatActivity() {
         recordingSwitch.setOnCheckedChangeListener { _, isChecked ->
             controller.recordingEnabled = isChecked
         }
+        bindCameraUseCases()
+        initialized = true
     }
 
     override fun onDestroy() {
-        controller.stopScanner()
         super.onDestroy()
+        if (initialized) {
+            controller.stopScanner()
+        }
     }
 
     override fun onPause() {
-        controller.stopScanner()
         super.onPause()
+        if (initialized) {
+            controller.stopScanner()
+        }
     }
 
     private fun toggleScanning() {
+        initialized.assert()
         controller.toggleScanning()
         updateUI()
     }
 
 
     private fun updateUI() {
+        if (!initialized) {
+            return
+        }
         view_TapToStart.visibility =
             if (controller.scanningStopped) View.VISIBLE else View.INVISIBLE
         val infoVisibility = if (controller.scanningStopped) View.INVISIBLE else View.VISIBLE
@@ -156,8 +174,10 @@ class CameraActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        bindCameraUseCases()
-        updateUI()
+        if (initialized) {
+            updateUI()
+            bindCameraUseCases()
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -167,8 +187,7 @@ class CameraActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == permissionsRequestCode && hasPermissions(this)) {
-            bindCameraUseCases()
-            initController()
+            initActivity()
         } else {
             finish() // If we don't have the required permissions, we can't run
         }

@@ -9,7 +9,7 @@ class AppStorage(context: Context, storageDir: String) {
 
     private fun getRootDir(context: Context, storageDir: String): File {
         val (extDir) = tryExternalStorage(storageDir)
-        return extDir?.let { it } ?: context.filesDir
+        return extDir ?: context.filesDir
     }
 
 
