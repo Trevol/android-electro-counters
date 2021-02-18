@@ -5,6 +5,9 @@ import com.tavrida.counter_scanner.scanning.CounterScaningResult
 import com.tavrida.utils.Timestamp
 import com.tavrida.utils.saveAsJpeg
 import com.tavrida.utils.zeroPad
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.File
 
 class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled: Boolean) {
@@ -29,13 +32,15 @@ class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled
         sessionDir = File(framesDir, sessionId)
     }
 
+    private inline fun baseName(frameId: Int) = frameId.zeroPad(FRAME_POS_LEN)
+
     fun record(frameWithId: ImageWithId) {
         if (disabled) {
             return
         }
         checkMaxFrames()
         createSessionDirIfNeeded()
-        frameWithId.id.zeroPad(FRAME_POS_LEN)
+        baseName(frameWithId.id)
             .let { paddedPos ->
                 File(sessionDir, "${paddedPos}.jpg")
             }.also { f ->
@@ -45,15 +50,23 @@ class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled
         framesRecordedInSession++
     }
 
-    fun record(frameId: Int, result: CounterScaningResult, analizeImageDuration: Long) {
+    fun record(frameId: Int, scanResult: CounterScaningResult, analyzeImageDuration: Long) {
         if (disabled) {
             return
         }
-        // result.seri
-        TODO("record raw detections!!!!")
+        val item = RecordItem(frameId, scanResult, analyzeImageDuration)
+        baseName(frameId).let { paddedPos ->
+            File(sessionDir, "${paddedPos}.jpg")
+        }.also { f ->
+            item.toJson().saveTo(f)
+        }
+        /*TODO("record raw detections!!!!")
         TODO("record timings!!!")
-        TODO()
+        TODO()*/
     }
+
+    @Serializable
+    private data class RecordItem(val frameId: Int, val scanResult: CounterScaningResult, val analyzeImageDuration: Long)
 
     private fun createSessionDirIfNeeded() {
         if (sessionDirCreated) {
@@ -71,8 +84,11 @@ class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled
     private companion object {
         const val MAX_FRAMES_PER_SESSION = 99999
         const val FRAME_POS_LEN = MAX_FRAMES_PER_SESSION.toString().length
+        const val JPEG_QUALITY = 75
 
-        private const val JPEG_QUALITY = 75
+        private inline fun <reified T> T.toJson() = Json.encodeToString(this)
+
+        private fun String.saveTo(file: File) = file.writeText(this)
     }
 
 }
