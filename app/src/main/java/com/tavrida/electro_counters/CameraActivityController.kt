@@ -14,6 +14,8 @@ import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import org.opencv.android.OpenCVLoader
 import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 
 class CameraActivityController(val context: Context) {
@@ -44,15 +46,18 @@ class CameraActivityController(val context: Context) {
         var enabled = false
     }
 
-    val scanningStopped get() = counterScanner.get() == null
-    private inline val scanningStarted get() = !scanningStopped
-
     private val cameraImageConverter by lazy { CameraImageConverter2(context) }
-    private val counterScannerProvider by lazy { CounterScannerProvider2() }
 
+    private val counterScannerProvider by lazy { CounterScannerProvider2() }
     private val detectorRoi = DetectionRoi(Size(400, 180))
 
-    private var counterScanner = AtomicReference<CounterScanner?>()
+    private val scannerLock = ReentrantLock()
+
+    private var counterScanner: CounterScanner? = null
+
+    val scanningStopped get() = scannerLock.withLock { counterScanner == null }
+    private inline val scanningStarted get() = !scanningStopped
+
     private val storage = AppStorage(context, STORAGE_DIR)
 
     private val frameId = Id()
@@ -75,16 +80,21 @@ class CameraActivityController(val context: Context) {
     }
 
     fun stopScanner() {
-        counterScanner.get()?.stop()
-        counterScanner.set(null)
+        scannerLock.withLock {
+            counterScanner?.stop()
+            counterScanner = null
+        }
     }
 
     private fun startScanner() {
-        counterScanner.set(
-            counterScannerProvider.createScanner(context, detectorRoi, telemetryRecorder)
-        )
-        frameId.reset()
+        scannerLock.withLock {
+            counterScanner = createScanner()
+            frameId.reset()
+        }
     }
+
+    private inline fun createScanner() =
+        counterScannerProvider.createScanner(context, detectorRoi, telemetryRecorder)
 
     fun toggleScanning() {
         if (scanningStarted) {
@@ -101,25 +111,27 @@ class CameraActivityController(val context: Context) {
     )
 
     fun analyzeImage(image: ImageProxy): AnalyzeImageResult {
-        // make local instance - because val can be updated by UI thread
-        val safeScannerInstance = counterScanner.get()
-        val bitmap = image.use {
-            cameraImageConverter.convert(it)
+        scannerLock.withLock {
+            // make local instance - because val can be updated by UI thread
+            val safeScannerInstance = counterScanner
+            val bitmap = image.use {
+                cameraImageConverter.convert(it)
+            }
+            if (scanningStopped) {
+                return AnalyzeImageResult(detectorRoi.draw(bitmap, roiPaint.stopped), null)
+            }
+
+            val imageWithId = ImageWithId(bitmap, frameId.next())
+            telemetryRecorder.record(imageWithId)
+            val result = safeScannerInstance!!.scan(imageWithId)
+            val step = analyzeSteps.step()
+            telemetryRecorder.record(imageWithId.id, result, step)
+
+            detectorRoi.draw(bitmap, roiPaint.started)
+            ScanResultDrawer().draw(bitmap, result)
+
+            return AnalyzeImageResult(bitmap, result to step)
         }
-        if (scanningStopped) {
-            return AnalyzeImageResult(detectorRoi.draw(bitmap, roiPaint.stopped), null)
-        }
-
-        val imageWithId = ImageWithId(bitmap, frameId.next())
-        telemetryRecorder.record(imageWithId)
-        val result = safeScannerInstance!!.scan(imageWithId)
-        val step = analyzeSteps.step()
-        telemetryRecorder.record(imageWithId.id, result, step)
-
-        detectorRoi.draw(bitmap, roiPaint.started)
-        ScanResultDrawer().draw(bitmap, result)
-
-        return AnalyzeImageResult(bitmap, result to step)
     }
 
 
