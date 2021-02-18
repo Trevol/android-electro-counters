@@ -3,6 +3,7 @@ package com.tavrida.counter_scanner.scanning
 import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.RectF
+import android.util.Size
 import com.tavrida.counter_scanner.DetectionsRecorder
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
@@ -11,11 +12,11 @@ import com.tavrida.counter_scanner.detection.ScreenDigitDetectionResult
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.electro_counters.tracking.AggregatedDigitDetectionTracker
 import com.tavrida.utils.RectF
+import com.tavrida.utils.size
 import org.opencv.core.Mat
 import java.util.concurrent.LinkedBlockingQueue
 import kotlin.concurrent.thread
 import kotlin.system.measureTimeMillis
-import kotlin.time.measureTimedValue
 
 internal class DetectorJob(
     private val detector: ScreenDigitDetector,
@@ -31,27 +32,35 @@ internal class DetectorJob(
     private val jobThread = startJobThread()
 
     private fun postprocessDigitDetections(
-        detectionRoiImage: Bitmap,
+        roiSize: Size,
         roiOrigin: Point,
         detectionResult: ScreenDigitDetectionResult
     ): List<DigitDetectionResult> {
         var digitsDetections = detectionResult.digitsDetections
+        val screenDetection = detectionResult.screenDetection ?: return listOf()
         if (skipDigitsOutsideScreen) {
-            val screenDetection = detectionResult.screenDetection ?: return listOf()
             digitsDetections = digitsDetections
                 .filter { screenDetection.location.contains(it.location) }
         }
         if (skipDigitsNearImageEdges) {
+            // TODO("skip screen (and digits in it) if screen near detection region edges")
+            val screenInsideRoi = screenDetection.location.insideRoi(roiSize,
+                roiOrigin,
+                ROI_PADDING)
+            if (!screenInsideRoi){
+                return listOf()
+            }
             digitsDetections = digitsDetections
                 .filter {
-                    it.location.insidePadding(
-                        detectionRoiImage.width,
-                        detectionRoiImage.height,
+                    it.location.insideRoi(
+                        roiSize,
                         roiOrigin,
-                        10
+                        ROI_PADDING
                     )
                 }
+
         }
+
 
         return digitsDetections
     }
@@ -71,7 +80,7 @@ internal class DetectorJob(
 
             val finalDigitsDetections =
                 postprocessDigitDetections(
-                    itemForDetection.detectionRoiImage,
+                    itemForDetection.detectionRoiImage.size,
                     itemForDetection.roiOrigin,
                     detectionResult
                 )
@@ -134,16 +143,18 @@ internal class DetectorJob(
     private companion object {
         private inline fun isRunning() = !isInterrupted()
         private inline fun isInterrupted() = Thread.currentThread().isInterrupted
-        private fun RectF.insidePadding(
-            imageWidth: Int,
-            imageHeight: Int,
+
+        const val ROI_PADDING = 10
+
+        private fun RectF.insideRoi(
+            roiSize: Size,
             roiOrigin: Point,
             padding: Int
         ): Boolean {
             val imgRect = RectF(
                 roiOrigin.x + padding, roiOrigin.y + padding,
-                roiOrigin.x + imageWidth - padding,
-                roiOrigin.y + imageHeight - padding
+                roiOrigin.x + roiSize.width - padding,
+                roiOrigin.y + roiSize.height - padding
             )
             return imgRect.contains(this)
         }
