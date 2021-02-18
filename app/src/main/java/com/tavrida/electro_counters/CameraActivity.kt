@@ -155,7 +155,7 @@ class CameraActivity : AppCompatActivity() {
     }
 
     private fun showResult(result: CameraActivityController.AnalyzeImageResult) {
-        imageView_preview.post {
+        runOnUiThread {
             imageView_preview.setImageBitmap(result.displayImage)
             if (result.scanResultAndDuration != null) {
                 val (scanResult, duration) = result.scanResultAndDuration
