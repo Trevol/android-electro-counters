@@ -15,7 +15,10 @@ import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import org.opencv.android.OpenCVLoader
 import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.locks.ReentrantLock
+import java.util.concurrent.locks.ReentrantReadWriteLock
+import kotlin.concurrent.read
 import kotlin.concurrent.withLock
+import kotlin.concurrent.write
 
 
 class CameraActivityController(val context: Context) {
@@ -51,11 +54,11 @@ class CameraActivityController(val context: Context) {
     private val counterScannerProvider by lazy { CounterScannerProvider2() }
     private val detectorRoi = DetectionRoi(Size(400, 180))
 
-    private val scannerLock = ReentrantLock()
+    private val scannerLock = ReentrantReadWriteLock()
 
     private var counterScanner: CounterScanner? = null
 
-    val scanningStopped get() = scannerLock.withLock { counterScanner == null }
+    val scanningStopped get() = scannerLock.read { counterScanner == null }
     private inline val scanningStarted get() = !scanningStopped
 
     private val storage = AppStorage(context, STORAGE_DIR)
@@ -79,18 +82,15 @@ class CameraActivityController(val context: Context) {
         }
     }
 
-    fun stopScanner() {
-        scannerLock.withLock {
-            counterScanner?.stop()
-            counterScanner = null
-        }
+    fun stopScanner() = scannerLock.write {
+        counterScanner?.stop()
+        counterScanner = null
     }
 
-    private fun startScanner() {
-        scannerLock.withLock {
-            counterScanner = createScanner()
-            frameId.reset()
-        }
+
+    private fun startScanner() = scannerLock.write {
+        counterScanner = createScanner()
+        frameId.reset()
     }
 
     private inline fun createScanner() =
@@ -110,15 +110,15 @@ class CameraActivityController(val context: Context) {
         val scanResultAndDuration: Pair<CounterScaningResult, Long>?
     )
 
-    fun analyzeImage(image: ImageProxy): AnalyzeImageResult {
-        scannerLock.withLock {
+    fun analyzeImage(image: ImageProxy) =
+        scannerLock.read {
             // make local instance - because val can be updated by UI thread
             val safeScannerInstance = counterScanner
             val bitmap = image.use {
                 cameraImageConverter.convert(it)
             }
             if (scanningStopped) {
-                return AnalyzeImageResult(detectorRoi.draw(bitmap, roiPaint.stopped), null)
+                AnalyzeImageResult(detectorRoi.draw(bitmap, roiPaint.stopped), null)
             }
 
             val imageWithId = ImageWithId(bitmap, frameId.next())
@@ -130,9 +130,8 @@ class CameraActivityController(val context: Context) {
             detectorRoi.draw(bitmap, roiPaint.started)
             ScanResultDrawer().draw(bitmap, result)
 
-            return AnalyzeImageResult(bitmap, result to step)
+            AnalyzeImageResult(bitmap, result to step)
         }
-    }
 
 
     private companion object {
