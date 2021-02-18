@@ -13,6 +13,7 @@ import com.tavrida.counter_scanner.scanning.DetectionRoi
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import org.opencv.android.OpenCVLoader
+import java.util.concurrent.atomic.AtomicReference
 
 
 class CameraActivityController(val context: Context) {
@@ -35,7 +36,7 @@ class CameraActivityController(val context: Context) {
         get() = recording.enabled
         set(value) {
             recording.enabled = value
-            framesRecorder.enabled = value
+            telemetryRecorder.enabled = value
         }
 
     private object recording {
@@ -43,7 +44,7 @@ class CameraActivityController(val context: Context) {
         var enabled = false
     }
 
-    val scanningStopped get() = counterScanner == null
+    val scanningStopped get() = counterScanner.get() == null
     private inline val scanningStarted get() = !scanningStopped
 
     private val cameraImageConverter by lazy { CameraImageConverter2(context) }
@@ -51,14 +52,14 @@ class CameraActivityController(val context: Context) {
 
     private val detectorRoi = DetectionRoi(Size(400, 180))
 
-    private var counterScanner: CounterScanner? = null
+    private var counterScanner = AtomicReference<CounterScanner?>()
     private val storage = AppStorage(context, STORAGE_DIR)
 
     private val frameId = Id()
-    private var framesRecorder: FramesRecorder =
-        FramesRecorder(storage, enabled = recording.enabled)
+    private var telemetryRecorder =
+        TelemetryRecorder(storage, enabled = recording.enabled)
 
-    private val analyzeCycles = CallDuration()
+    private val analyzeSteps = CallStep()
 
     private val appLog = AppLog(storage)
 
@@ -74,12 +75,14 @@ class CameraActivityController(val context: Context) {
     }
 
     fun stopScanner() {
-        counterScanner?.stop()
-        counterScanner = null
+        counterScanner.get()?.stop()
+        counterScanner.set(null)
     }
 
     private fun startScanner() {
-        counterScanner = counterScannerProvider.createScanner(context, detectorRoi)
+        counterScanner.set(
+            counterScannerProvider.createScanner(context, detectorRoi, telemetryRecorder)
+        )
         frameId.reset()
     }
 
@@ -89,7 +92,7 @@ class CameraActivityController(val context: Context) {
         } else {
             startScanner()
         }
-        framesRecorder.toggleSession(scanningStarted)
+        telemetryRecorder.toggleSession(scanningStarted)
     }
 
     data class AnalyzeImageResult(
@@ -99,7 +102,7 @@ class CameraActivityController(val context: Context) {
 
     fun analyzeImage(image: ImageProxy): AnalyzeImageResult {
         // make local instance - because val can be updated by UI thread
-        val safeScannerInstance = counterScanner
+        val safeScannerInstance = counterScanner.get()
         val bitmap = image.use {
             cameraImageConverter.convert(it)
         }
@@ -108,15 +111,15 @@ class CameraActivityController(val context: Context) {
         }
 
         val imageWithId = ImageWithId(bitmap, frameId.next())
-        framesRecorder.record(imageWithId)
-        val result = safeScannerInstance!!.scan(bitmap)
-        val duration = analyzeCycles.duration()
-        framesRecorder.record(imageWithId.id, result, duration)
+        telemetryRecorder.record(imageWithId)
+        val result = safeScannerInstance!!.scan(imageWithId)
+        val step = analyzeSteps.step()
+        telemetryRecorder.record(imageWithId.id, result, step)
 
         detectorRoi.draw(bitmap, roiPaint.started)
         ScanResultDrawer().draw(bitmap, result)
 
-        return AnalyzeImageResult(bitmap, result to duration)
+        return AnalyzeImageResult(bitmap, result to step)
     }
 
 
@@ -139,10 +142,10 @@ private class Id(val initialVal: Int = 0) {
     fun next() = id++
 }
 
-private class CallDuration {
+private class CallStep {
     private var prevCall: Long? = null
 
-    fun duration(): Long {
+    fun step(): Long {
         val current = System.currentTimeMillis()
         val duration = current - (prevCall ?: current)
         prevCall = current

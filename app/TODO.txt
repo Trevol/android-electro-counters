@@ -1,8 +1,8 @@
 - протоколирование
    +++ модель устройства
-   - кадры (с номерами)
-   - detections (с номером кадра)
-   - тайминги (с номером кадра)
+   + кадры (с номерами)
+   + detections (с номером кадра)
+   + тайминги (с номером кадра)
    +++ кадры/детекции/тайминги распределять по каталогам (имя - идентификатор сессии). Каталог создавать непосредственно с началом протоколирования
    - запись кадров (детекций/таймингов) осуществлять в фоне (в отдельном потоке) с обменом через очередь
       - реализовать отдельный сервис (класс) сбора подобной информации
@@ -32,9 +32,11 @@
     - https://stackoverflow.com/questions/4427515/using-global-exception-handling-on-android
     - https://www.bugsnag.com/blog/error-handling-on-android-part-2
 
-- skip detection near ROI edges
-- skip detections outside of screen
-- skip screen (and digits in it) if screen near detection region edges
+++ skip detection near ROI edges
+++ skip detections outside of screen
+
+-------- skip screen (and digits in it) if screen near detection region edges
+
 - train with negative images
    - hard negative mining from annotated images
    - with QR code  (current detector detect digits in QR codes)

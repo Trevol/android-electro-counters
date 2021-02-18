@@ -1,9 +1,13 @@
+@file:UseSerializers(RectFSerializer::class)
 package com.tavrida.counter_scanner.detection
 
 import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.RectF
 import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
+import com.tavrida.utils.serialization.RectFSerializer
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.UseSerializers
 
 class ScreenDigitDetector(private val objectDetector: TfliteDetector) {
     fun detect(img: Bitmap, imgOrigin: Point?): ScreenDigitDetectionResult {
@@ -48,11 +52,12 @@ class ScreenDigitDetector(private val objectDetector: TfliteDetector) {
     }
 }
 
-
+@Serializable
 data class ScreenDigitDetectionResult(
     val screenDetection: ScreenDetectionResult?,
     val digitsDetections: List<DigitDetectionResult>
 )
-
+@Serializable
 data class ScreenDetectionResult(val score: Float, val location: RectF)
+@Serializable
 data class DigitDetectionResult(val digit: Int, val score: Float, val location: RectF)

@@ -1,6 +1,9 @@
 package com.tavrida.electro_counters
 
+import com.tavrida.counter_scanner.DetectionsRecorder
 import com.tavrida.counter_scanner.ImageWithId
+import com.tavrida.counter_scanner.detection.DigitDetectionResult
+import com.tavrida.counter_scanner.detection.ScreenDigitDetectionResult
 import com.tavrida.counter_scanner.scanning.CounterScaningResult
 import com.tavrida.utils.Timestamp
 import com.tavrida.utils.saveAsJpeg
@@ -10,7 +13,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
-class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled: Boolean) {
+class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var enabled: Boolean) :
+    DetectionsRecorder {
+
     inline val disabled get() = !enabled
     private val framesDir = File(storage.root, subDir)
     private var sessionDir = File("", "")
@@ -50,23 +55,63 @@ class FramesRecorder(storage: AppStorage, subDir: String = "frames", var enabled
         framesRecordedInSession++
     }
 
-    fun record(frameId: Int, scanResult: CounterScaningResult, analyzeImageDuration: Long) {
+    fun record(frameId: Int, scanResult: CounterScaningResult, analyzeStepMs: Long) {
+        @Serializable
+        data class recitem2(
+            val frameId: Int, val scanResult: CounterScaningResult, val analyzeStepMs: Long
+        )
+
         if (disabled) {
             return
         }
-        val item = RecordItem(frameId, scanResult, analyzeImageDuration)
+        val item = recitem2(frameId, scanResult, analyzeStepMs)
         baseName(frameId).let { paddedPos ->
-            File(sessionDir, "${paddedPos}.jpg")
+            File(sessionDir, "${paddedPos}.scan_result")
         }.also { f ->
             item.toJson().saveTo(f)
         }
-        /*TODO("record raw detections!!!!")
-        TODO("record timings!!!")
-        TODO()*/
+    }
+
+    override fun record(
+        frameId: Int,
+        rawDetection: ScreenDigitDetectionResult,
+        finalDigitsDetections: List<DigitDetectionResult>,
+        detectionMs: Long,
+        trackingMs: Long
+    ) {
+        @Serializable
+        data class recitem(
+            val frameId: Int,
+            val rawDetection: ScreenDigitDetectionResult,
+            val finalDigitsDetections: List<DigitDetectionResult>,
+            val detectionMs: Long,
+            val trackingMs: Long
+        )
+
+        if (disabled) {
+            return
+        }
+
+        val item = recitem(
+            frameId,
+            rawDetection,
+            finalDigitsDetections,
+            detectionMs,
+            trackingMs
+        )
+        baseName(frameId).let { paddedPos ->
+            File(sessionDir, "${paddedPos}.detections")
+        }.also { f ->
+            item.toJson().saveTo(f)
+        }
     }
 
     @Serializable
-    private data class RecordItem(val frameId: Int, val scanResult: CounterScaningResult, val analyzeImageDuration: Long)
+    internal data class RecordItem(
+        val frameId: Int,
+        val scanResult: CounterScaningResult,
+        val analyzeStepMs: Long
+    )
 
     private fun createSessionDirIfNeeded() {
         if (sessionDirCreated) {

@@ -4,6 +4,8 @@ import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.RectF
+import com.tavrida.counter_scanner.DetectionsRecorder
+import com.tavrida.counter_scanner.ImageWithId
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.aggregation.DigitAtLocation
@@ -24,7 +26,8 @@ import kotlin.concurrent.withLock
 class CounterScanner(
     detector: ScreenDigitDetector,
     private val detectorRoi: DetectionRoi,
-    stabilityThresholdMs: Long
+    stabilityThresholdMs: Long,
+    recorder: DetectionsRecorder?
 ) : Closeable {
 
     private var stopped = false
@@ -34,7 +37,8 @@ class CounterScanner(
     private val detectorJob = DetectorJob(
         detector, detectionTracker, digitExtractor,
         skipDigitsOutsideScreen = true,
-        skipDigitsNearImageEdges = true
+        skipDigitsNearImageEdges = true,
+        recorder
     )
     private val readingInfoTracker = utils.ReadingInfoTracker(stabilityThresholdMs)
     private val consumerIdTracker = utils.ConsumerIdTracker(scanNthImage = 5, forgetAfter = 500)
@@ -59,13 +63,13 @@ class CounterScanner(
         stopped = true
     }
 
-    fun scan(inputImg: Bitmap): CounterScaningResult {
+    fun scan(input: ImageWithId): CounterScaningResult {
         return lock.withLock { //can be stopped (with clearing state) from other (UI)thread
-            scanNolock(inputImg)
+            scanNolock(input)
         }
     }
 
-    private fun scanNolock(inputImg: Bitmap): CounterScaningResult {
+    private fun scanNolock(input: ImageWithId): CounterScaningResult {
         try {
             if (stopped) {
                 return CounterScaningResult.empty()
@@ -73,14 +77,15 @@ class CounterScanner(
 
             checkQueueOverflow()
 
-            val (detectionRoiImg, _, roiOrigin) = detectorRoi.extractImage(inputImg)
-            val grayMat = bitmapToMats.convertToGrayscale(inputImg)
+            val (detectionRoiImg, _, roiOrigin) = detectorRoi.extractImage(input.image)
+            val grayMat = bitmapToMats.convertToGrayscale(input.image)
 
-            consumerIdTracker.enqueue(inputImg.copy(false))
+            consumerIdTracker.enqueue(input.image.copy(false))
 
             detectorJob.input.put(
                 DetectorJobInputItem(
                     serialSeq,
+                    input.id,
                     detectionRoiImg,
                     roiOrigin,
                     grayMat
