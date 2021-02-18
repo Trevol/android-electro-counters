@@ -119,18 +119,18 @@ class CameraActivityController(val context: Context) {
             }
             if (scanningStopped) {
                 AnalyzeImageResult(detectorRoi.draw(bitmap, roiPaint.stopped), null)
+            } else {
+                val imageWithId = ImageWithId(bitmap, frameId.next())
+                telemetryRecorder.record(imageWithId)
+                val result = safeScannerInstance!!.scan(imageWithId)
+                val step = analyzeSteps.step()
+                telemetryRecorder.record(imageWithId.id, result, step)
+
+                detectorRoi.draw(bitmap, roiPaint.started)
+                ScanResultDrawer().draw(bitmap, result)
+
+                AnalyzeImageResult(bitmap, result to step)
             }
-
-            val imageWithId = ImageWithId(bitmap, frameId.next())
-            telemetryRecorder.record(imageWithId)
-            val result = safeScannerInstance!!.scan(imageWithId)
-            val step = analyzeSteps.step()
-            telemetryRecorder.record(imageWithId.id, result, step)
-
-            detectorRoi.draw(bitmap, roiPaint.started)
-            ScanResultDrawer().draw(bitmap, result)
-
-            AnalyzeImageResult(bitmap, result to step)
         }
 
 
