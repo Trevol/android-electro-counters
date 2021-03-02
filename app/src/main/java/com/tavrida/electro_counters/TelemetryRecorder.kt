@@ -57,14 +57,14 @@ class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var e
 
     fun record(frameId: Int, scanResult: CounterScaningResult, analyzeStepMs: Long) {
         @Serializable
-        data class recitem2(
+        data class ScanResultModel(
             val frameId: Int, val scanResult: CounterScaningResult, val analyzeStepMs: Long
         )
 
         if (disabled) {
             return
         }
-        val item = recitem2(frameId, scanResult, analyzeStepMs)
+        val item = ScanResultModel(frameId, scanResult, analyzeStepMs)
         baseName(frameId).let { paddedPos ->
             File(sessionDir, "${paddedPos}.scan_result")
         }.also { f ->
@@ -80,7 +80,7 @@ class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var e
         trackingMs: Long
     ) {
         @Serializable
-        data class recitem(
+        data class DetectionsTelemetryModel(
             val frameId: Int,
             val rawDetection: ScreenDigitDetectionResult,
             val finalDigitsDetections: List<DigitDetectionResult>,
@@ -92,7 +92,7 @@ class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var e
             return
         }
 
-        val item = recitem(
+        val item = DetectionsTelemetryModel(
             frameId,
             rawDetection,
             finalDigitsDetections,
