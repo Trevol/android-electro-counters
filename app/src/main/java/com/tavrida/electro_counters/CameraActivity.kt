@@ -121,7 +121,7 @@ class CameraActivity : AppCompatActivity() {
 
     private fun bindCameraUseCases() = imageView_preview.post {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(this)
-        cameraProviderFuture.addListener(Runnable {
+        cameraProviderFuture.addListener({
             // Camera provider is now guaranteed to be available
             val cameraProvider = cameraProviderFuture.get()
 
