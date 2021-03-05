@@ -3,7 +3,6 @@ package com.tavrida.counter_scanner.scanning
 import android.graphics.*
 import android.util.Size
 import com.tavrida.utils.assert
-import com.tavrida.utils.copy
 import com.tavrida.utils.size
 import com.tavrida.utils.tl
 
@@ -47,18 +46,13 @@ class DetectionRoi(val size: Size) {
     }
 
     private companion object {
-        fun calcRoiRect(imageSize: Size, roiSize: Size): Rect {
-            val centerX = imageSize.width / 2.0f
-            val centerY = imageSize.height / 2.0f
+        fun calcRoiRect(imageSize: Size, roiSize: Size) = Rect(
+            (imageSize.width - roiSize.width).half(),
+            (imageSize.height - roiSize.height).half(),
+            (imageSize.width + roiSize.width).half(),
+            (imageSize.height + roiSize.height).half()
+        )
 
-            val halfW = roiSize.width / 2f
-            val halfH = roiSize.height / 2f
-            return Rect(
-                (centerX - halfW).toInt(),
-                (centerY - halfH).toInt(),
-                (centerX + halfW).toInt(),
-                (centerY + halfH).toInt()
-            )
-        }
+        inline fun Int.half() = this / 2
     }
 }
