@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Size
+import android.view.KeyEvent
 import android.view.Surface
 import android.view.View
 import android.view.ViewTreeObserver
@@ -53,6 +54,16 @@ class CameraActivity : AppCompatActivity() {
                 this, permissions.toTypedArray(), permissionsRequestCode
             )
         }
+    }
+
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode in SCANNING_CONTROL_KEYS) {
+            if (initialized) {
+                toggleScanning()
+            }
+            return true
+        }
+        return super.onKeyDown(keyCode, event)
     }
 
     private fun initActivity() {
@@ -198,6 +209,8 @@ class CameraActivity : AppCompatActivity() {
     }
 
     companion object {
+        val SCANNING_CONTROL_KEYS = listOf(KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN)
+
         inline fun View.afterMeasured(crossinline block: () -> Unit) {
             viewTreeObserver.addOnGlobalLayoutListener(object :
                 ViewTreeObserver.OnGlobalLayoutListener {
