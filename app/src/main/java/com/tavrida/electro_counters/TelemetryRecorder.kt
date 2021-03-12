@@ -7,6 +7,7 @@ import com.tavrida.counter_scanner.detection.ScreenDigitDetectionResult
 import com.tavrida.counter_scanner.scanning.CounterScaningResult
 import com.tavrida.utils.Timestamp
 import com.tavrida.utils.saveAsJpeg
+import com.tavrida.utils.saveAsRawPixelData
 import com.tavrida.utils.zeroPad
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -45,11 +46,18 @@ class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var e
         }
         checkMaxFrames()
         createSessionDirIfNeeded()
-        baseName(frameWithId.id)
+
+        /*baseName(frameWithId.id)
             .let { paddedPos ->
                 File(sessionDir, "${paddedPos}.jpg")
             }.also { f ->
                 frameWithId.image.saveAsJpeg(f, JPEG_QUALITY)
+            }*/
+        baseName(frameWithId.id)
+            .let { paddedPos ->
+                File(sessionDir, "${paddedPos}.pixel_data")
+            }.also { f ->
+                frameWithId.image.saveAsRawPixelData(f)
             }
 
         framesRecordedInSession++

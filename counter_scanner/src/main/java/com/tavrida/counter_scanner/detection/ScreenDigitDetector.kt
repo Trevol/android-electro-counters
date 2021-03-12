@@ -16,6 +16,7 @@ class ScreenDigitDetector(private val objectDetector: TfliteDetector) {
             .remapToFullImage(imgOrigin)
         val screenDetection = objectDetections.firstOrNull { it.isScreen }
         val digitDetections = objectDetections.filter { it.isDigit }
+
         return ScreenDigitDetectionResult(
             screenDetection = screenDetection?.let { ScreenDetectionResult(it.score, it.location) },
             digitsDetections = digitDetections.map {
