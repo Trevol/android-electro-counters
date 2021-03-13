@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.UseSerializers
 
 class ScreenDigitDetector(private val objectDetector: TfliteDetector) {
+
     fun detect(img: Bitmap, imgOrigin: Point?): ScreenDigitDetectionResult {
         val objectDetections = objectDetector
             .detect(img, SCORE_THRESHOLD)

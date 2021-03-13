@@ -1,11 +1,8 @@
 package com.tavrida.electro_counters.detection.tflite.new_detector
 
-import android.graphics.Bitmap
-import android.graphics.RectF
+import android.graphics.*
 import com.tavrida.counter_scanner.detection.ObjectDetectionResult
-import com.tavrida.utils.copy
-import com.tavrida.utils.saveAsJpeg
-import com.tavrida.utils.zeroPad
+import com.tavrida.utils.*
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.support.common.TensorOperator
@@ -74,7 +71,18 @@ class TfliteDetector(
 
         frameCounter++
         if (filesDir != null) {
-            img.copy().draw(detections).saveAsJpeg(File(filesDir, "${frameCounter.zeroPad(5)}.jpg"))
+            val baseName = frameCounter.zeroPad(5)
+            "$baseName.pixel_data"
+                .let { fn -> File(filesDir, fn) }
+                .also { f ->
+                    img.saveAsRawPixelData(f)
+                }
+
+            "$baseName.jpg"
+                .let { fn -> File(filesDir, fn) }
+                .also { f ->
+                    img.copy().draw(detections).saveAsJpeg(f)
+                }
         }
 
         return detections
@@ -96,35 +104,39 @@ class TfliteDetector(
             return Interpreter(modelFile, options).apply { allocateTensors() }
         }
 
+        private val drawPaint = Paint().apply {
+            color = Color.argb(255, 0, 255, 0)
+            style = Paint.Style.STROKE
+            strokeWidth = 1f
+        }
+
+        private val digitPaintManager = PaintFontSizeManager(
+            Paint().apply {
+                color = Color.argb(255, 255, 0, 0)
+                style = Paint.Style.FILL_AND_STROKE
+                strokeWidth = 1f
+                textSize = 24f
+            })
+
         private fun Bitmap.draw(detections: List<ObjectDetectionResult>): Bitmap {
-            TODO()
+            val canv = Canvas(this)
+            for (d in detections) {
+                canv.drawRect(d.location, drawPaint)
+                if (d.classId != 10) {
+                    val text = d.classId.toString()
+                    digitPaintManager.setTextSizeForHeight(d.location.height(), text)
+                    canv.drawText(
+                        text,
+                        d.location.left + 2,
+                        d.location.top - 2,
+                        digitPaintManager.paint
+                    )
+                }
+            }
+            return this
         }
 
-        /*
-        fun draw(
-        inputBitmap: Bitmap,
-        scanResult: CounterScaningResult
-    ): Bitmap {
-        val canvas = Canvas(inputBitmap)
-        for (d in scanResult.digitsAtLocations) {
-            canvas.drawRect(d.location, digitsBoxPaint)
 
-            val text = d.digit.toString()
-            digitPaintManager.setTextSizeForHeight(d.location.height() - 4, text)
-            canvas.drawText(text, d.location.left + 2, d.location.top - 2, digitPaintManager.paint)
-        }
-
-        scanResult.consumerInfo?.barcodeLocation?.let { location ->
-            val markRect = Rect(
-                location.centerX() - BARCODE_MARK_R, location.centerY() - BARCODE_MARK_R,
-                location.centerX() + BARCODE_MARK_R, location.centerY() + BARCODE_MARK_R
-            )
-            canvas.drawRect(markRect, barckodeMarkPaint)
-        }
-
-        return inputBitmap
-    }
-        * */
     }
 }
 
