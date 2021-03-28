@@ -70,6 +70,7 @@ class CameraActivity : AppCompatActivity() {
         if (initialized) {
             return
         }
+
         initController()
         updateUI()
         imageView_preview.setOnClickListener {
@@ -147,7 +148,7 @@ class CameraActivity : AppCompatActivity() {
             val camera = cameraProvider.bindToLifecycle(
                 this as LifecycleOwner, cameraSelector, imageAnalysis
             )
-
+            // camera.cameraControl.enableTorch(true)
             imageView_preview.afterMeasured { setupAutoFocus(imageView_preview, camera) }
 
         }, ContextCompat.getMainExecutor(this))
