@@ -1,6 +1,7 @@
 package com.tavrida.utils
 
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import org.opencv.core.CvType
 import org.opencv.core.Mat
 import java.io.*
@@ -38,10 +39,35 @@ fun InputStream.rawPixelDataToMat(): Mat {
         .apply { put(0, 0, pixelData) }
 }
 
+fun InputStream.decodeRawPixelBuffer(): Bitmap {
+    val width = readShort().toInt()
+    val height = readShort().toInt()
+    val pixelData = ByteArray(width * height * 4)
+        .apply { read(this) }
+        .let { ByteBuffer.wrap(it) }
+    return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        .apply { copyPixelsFromBuffer(pixelData) }
+
+}
+
 fun Bitmap.saveAsRawPixelData(file: File) = FileOutputStream(file).use { fs ->
     toRawPixelData(fs)
 }
 
 fun imreadAsRawPixelData(file: File) = FileInputStream(file).use {
     it.rawPixelDataToMat()
+}
+
+fun decodeRawPixelBuffer(file: File) = FileInputStream(file).use {
+    it.decodeRawPixelBuffer()
+}
+
+object BitmapFactoryEx {
+    fun decodeFile(file: File): Bitmap {
+        if (file.extension == "pixel_data") {
+            return decodeRawPixelBuffer(file)
+        } else {
+            return BitmapFactory.decodeFile(file.absolutePath)
+        }
+    }
 }

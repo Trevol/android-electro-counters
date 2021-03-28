@@ -69,7 +69,7 @@ class TfliteDetector(
                 )
             }
 
-        frameCounter++
+        /*frameCounter++
         if (filesDir != null) {
             val baseName = frameCounter.zeroPad(5)
             "$baseName.pixel_data"
@@ -83,7 +83,7 @@ class TfliteDetector(
                 .also { f ->
                     img.copy().draw(detections).saveAsJpeg(f)
                 }
-        }
+        }*/
 
         return detections
     }
