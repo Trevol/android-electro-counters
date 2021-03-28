@@ -66,12 +66,12 @@ dependencies {
     // CameraX View class
     implementation 'androidx.camera:camera-view:1.0.0-alpha23'
 
-    implementation "io.ktor:ktor-server-core:$ktor_version"
+    /*implementation "io.ktor:ktor-server-core:$ktor_version"
     implementation "io.ktor:ktor-server-cio:$ktor_version"
     implementation "ch.qos.logback:logback-classic:1.2.3"
     implementation "io.ktor:ktor-serialization:$ktor_version"
     implementation "io.ktor:ktor-html-builder:$ktor_version"
-    implementation "io.ktor:ktor-server-host-common:$ktor_version"
+    implementation "io.ktor:ktor-server-host-common:$ktor_version"*/
 
 
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1"
