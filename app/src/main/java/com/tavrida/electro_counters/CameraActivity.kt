@@ -186,8 +186,7 @@ class CameraActivity : AppCompatActivity() {
             if (result.scanResultAndDuration != null) {
                 val (scanResult, duration) = result.scanResultAndDuration
                 val readings = scanResult.readingInfo?.reading
-                textView_timings.text =
-                    "${duration}ms  ${result.displayImage.width}x${result.displayImage.height}"
+                textView_timings.text = "${duration}ms"
 
                 textView_readings.text = readings
                 textView_clientId.text = scanResult.consumerInfo?.consumerId
