@@ -16,6 +16,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.utils.assert
+import com.tavrida.utils.iif
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -31,6 +32,7 @@ class CameraActivity : AppCompatActivity() {
     private val permissionsRequestCode = Random.nextInt(0, 10000)
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
+    private var camera: Camera? = null
 
     //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
     private val cameraRes = Size(640, 480)
@@ -81,8 +83,21 @@ class CameraActivity : AppCompatActivity() {
             controller.recordingEnabled = isChecked
         }
         bindCameraUseCases()
+        // TorchState
+        // CameraManager.TorchCallback
+        syncFlashlightUI()
+        torchSwitch.setOnClickListener {
+            flashlightEnabled = !flashlightEnabled
+            camera!!.cameraControl.enableTorch(flashlightEnabled)
+            syncFlashlightUI()
+        }
         initialized = true
     }
+
+    var flashlightEnabled = false
+    fun syncFlashlightUI() = torchSwitch.setImageResource(
+        flashlightEnabled.iif(R.drawable.icons8_torch_32_on, R.drawable.icons8_torch_32_off)
+    )
 
     override fun onDestroy() {
         super.onDestroy()
@@ -145,11 +160,10 @@ class CameraActivity : AppCompatActivity() {
             val cameraSelector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
 
             cameraProvider.unbindAll()
-            val camera = cameraProvider.bindToLifecycle(
+            camera = cameraProvider.bindToLifecycle(
                 this as LifecycleOwner, cameraSelector, imageAnalysis
             )
-            // camera.cameraControl.enableTorch(true)
-            imageView_preview.afterMeasured { setupAutoFocus(imageView_preview, camera) }
+            imageView_preview.afterMeasured { setupAutoFocus(imageView_preview, camera!!) }
 
         }, ContextCompat.getMainExecutor(this))
     }
