@@ -46,7 +46,7 @@ class CameraActivityController(val context: Context) {
 
     private object recording {
         //global var - value should be preserved between activity recreations
-        var enabled = false
+        var enabled = true
     }
 
     private val cameraImageConverter by lazy { CameraImageConverter2(context) }

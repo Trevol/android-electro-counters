@@ -9,6 +9,7 @@ import android.view.KeyEvent
 import android.view.Surface
 import android.view.View
 import android.view.ViewTreeObserver
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -17,6 +18,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.utils.assert
 import com.tavrida.utils.iif
+import com.tavrida.utils.toggle
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -33,6 +35,7 @@ class CameraActivity : AppCompatActivity() {
 
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
     private var camera: Camera? = null
+    private val flashlightControl = FlashlightControl({ flashSwitch }) { camera!! }
 
     //4x3 resolutions: 640×480, 800×600, 960×720, 1024×768, 1280×960, 1400×1050, 1440×1080 , 1600×1200, 1856×1392, 1920×1440, and 2048×1536
     private val cameraRes = Size(640, 480)
@@ -78,26 +81,15 @@ class CameraActivity : AppCompatActivity() {
         imageView_preview.setOnClickListener {
             toggleScanning()
         }
-        recordingSwitch.isChecked = controller.recordingEnabled
-        recordingSwitch.setOnCheckedChangeListener { _, isChecked ->
-            controller.recordingEnabled = isChecked
-        }
         bindCameraUseCases()
         // TorchState
         // CameraManager.TorchCallback
-        syncFlashlightUI()
-        torchSwitch.setOnClickListener {
-            flashlightEnabled = !flashlightEnabled
-            camera!!.cameraControl.enableTorch(flashlightEnabled)
-            syncFlashlightUI()
+        flashlightControl.syncUI()
+        flashSwitch.setOnClickListener {
+            flashlightControl.toggle()
         }
         initialized = true
     }
-
-    var flashlightEnabled = false
-    fun syncFlashlightUI() = torchSwitch.setImageResource(
-        flashlightEnabled.iif(R.drawable.icons8_torch_32_on, R.drawable.icons8_torch_32_off)
-    )
 
     override fun onDestroy() {
         super.onDestroy()
@@ -223,6 +215,23 @@ class CameraActivity : AppCompatActivity() {
     }
 
     companion object {
+        class FlashlightControl(val flashSwitch: () -> ImageView, val camera: () -> Camera) {
+            private var enabled = false
+            fun enabled() = enabled
+
+            fun toggle() {
+                enabled = enabled.toggle()
+                camera().cameraControl.enableTorch(enabled)
+                syncUI()
+            }
+
+            fun syncUI() {
+                flashSwitch().setImageResource(
+                    enabled.iif(R.drawable.icons8_torch_32_on, R.drawable.icons8_torch_32_off)
+                )
+            }
+        }
+
         val SCANNING_CONTROL_KEYS = listOf(KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN)
 
         inline fun View.afterMeasured(crossinline block: () -> Unit) {

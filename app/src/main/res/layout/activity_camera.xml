@@ -91,7 +91,7 @@
                 />
 
             <ImageButton
-                android:id="@+id/torchSwitch"
+                android:id="@+id/flashSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Flash"
