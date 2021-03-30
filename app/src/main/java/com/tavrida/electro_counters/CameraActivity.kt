@@ -15,6 +15,7 @@ import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.utils.assert
 import com.tavrida.utils.iif
@@ -109,6 +110,19 @@ class CameraActivity : AppCompatActivity() {
         initialized.assert()
         controller.toggleScanning()
         updateUI()
+        if (controller.scanningStopped){
+            showLastRecordingSession()
+        }
+    }
+
+    private fun showLastRecordingSession() {
+        val fragment = RecordingViewerFragment()
+        supportFragmentManager.beginTransaction().run {
+            setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+            add(R.id.rootView, fragment)
+            addToBackStack(null)
+            commit()
+        }
     }
 
 
