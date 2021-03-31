@@ -19,6 +19,7 @@ import androidx.fragment.app.FragmentTransaction
 import androidx.lifecycle.LifecycleOwner
 import com.tavrida.utils.assert
 import com.tavrida.utils.iif
+import com.tavrida.utils.log
 import com.tavrida.utils.toggle
 import kotlinx.android.synthetic.main.activity_camera.*
 import java.io.File

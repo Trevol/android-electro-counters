@@ -1,5 +1,6 @@
 package com.tavrida.testsondevice
 
+import android.app.Application
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -39,7 +40,7 @@ class DetectorServer {
     }
 
     private object detectorFactory {
-        private const val MODEL_FILE = "screen_digits_320x128_251.tflite"
+        private const val MODEL_FILE = "screen_digits_320x128_351_noblur.tflite"
         private val inputSize = Size(320, 128)
 
         private fun mapAssetFile(context: Context, fileName: String): ByteBuffer {

@@ -3,6 +3,7 @@ package com.tavrida.electro_counters
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,9 +12,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import com.tavrida.counter_scanner.utils.glob
+import com.tavrida.utils.log
 import java.io.File
 
 class RecordingViewerFragment(val sessionDir: File) : DialogFragment() {
+    lateinit var rootView: View
     lateinit var imgView: ImageView
     lateinit var positionTxt: TextView
     lateinit var backBtn: Button
@@ -34,6 +37,7 @@ class RecordingViewerFragment(val sessionDir: File) : DialogFragment() {
         .also { setupUI() }
 
     private fun bindUI(view: View) {
+        rootView = view.findViewById(R.id.recording_viewer_root)
         imgView = view.findViewById(R.id.recorded_image_view)
         positionTxt = view.findViewById(R.id.position_txt)
         backBtn = view.findViewById(R.id.back_btn)
@@ -46,6 +50,9 @@ class RecordingViewerFragment(val sessionDir: File) : DialogFragment() {
 
     private fun setupUI() {
         closeBtn.setOnClickListener { close() }
+        /*rootView.setOnKeyListener { view, keyCode, keyEvent ->
+            false
+        }*/
         backBtn.setOnClickListener {
             if (items.move(-1)) {
                 updateImageAndPosition()
@@ -85,6 +92,7 @@ class RecordingViewerFragment(val sessionDir: File) : DialogFragment() {
     }
 
     private companion object {
+        val SCANNING_CONTROL_KEYS = listOf(KeyEvent.KEYCODE_VOLUME_UP, KeyEvent.KEYCODE_VOLUME_DOWN)
         const val FAST_ITEMS = 30
         fun imageFiles(sessionDir: File) = glob(File(sessionDir, "*.jpg")).sorted()
     }

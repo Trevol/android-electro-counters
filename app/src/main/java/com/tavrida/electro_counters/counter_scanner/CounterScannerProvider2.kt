@@ -25,7 +25,7 @@ class CounterScannerProvider2() {
         ScreenDigitDetector(objectDetector.instance(context))
 
     private object objectDetector {
-        private const val MODEL_FILE = "screen_digits_320x128_251.tflite"
+        private const val MODEL_FILE = "screen_digits_320x128_351_noblur.tflite"
         private val inputSize = Size(320, 128)
         private var instance: TfliteDetector? = null
 
