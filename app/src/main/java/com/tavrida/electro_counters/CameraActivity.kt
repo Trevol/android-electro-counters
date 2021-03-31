@@ -21,6 +21,7 @@ import com.tavrida.utils.assert
 import com.tavrida.utils.iif
 import com.tavrida.utils.toggle
 import kotlinx.android.synthetic.main.activity_camera.*
+import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -83,11 +84,16 @@ class CameraActivity : AppCompatActivity() {
             toggleScanning()
         }
         bindCameraUseCases()
+
         // TorchState
         // CameraManager.TorchCallback
         flashlightControl.syncUI()
         flashSwitch.setOnClickListener {
             flashlightControl.toggle()
+        }
+
+        viewLastRecordings_btn.setOnClickListener {
+            showLastRecordingSession()
         }
         initialized = true
     }
@@ -110,13 +116,15 @@ class CameraActivity : AppCompatActivity() {
         initialized.assert()
         controller.toggleScanning()
         updateUI()
-        if (controller.scanningStopped){
+        if (controller.scanningStopped) {
             showLastRecordingSession()
         }
     }
 
     private fun showLastRecordingSession() {
-        val fragment = RecordingViewerFragment()
+        controller.stopScanner()
+        val lastSessionDir = controller.telemetryRecorder.sessionDir ?: return
+        val fragment = RecordingViewerFragment(lastSessionDir)
         supportFragmentManager.beginTransaction().run {
             setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
             add(R.id.rootView, fragment)

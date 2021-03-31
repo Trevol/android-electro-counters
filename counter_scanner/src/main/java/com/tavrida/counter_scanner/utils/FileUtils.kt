@@ -5,12 +5,16 @@ import java.nio.file.FileSystems
 
 fun glob(pathPattern: String): Array<File> {
     // https://stonesoupprogramming.com/2017/12/07/kotlin-glob/
-    val pathPatternFile = File(pathPattern)
-    if (pathPatternFile.isDirectory) {
-        return pathPatternFile.listFiles() ?: arrayOf()
+    return glob(File(pathPattern))
+}
+
+fun glob(pathPattern: File): Array<File> {
+    // https://stonesoupprogramming.com/2017/12/07/kotlin-glob/
+    if (pathPattern.isDirectory) {
+        return pathPattern.listFiles() ?: arrayOf()
     }
-    val pattern = pathPatternFile.name
-    val parentDir = pathPatternFile.parentFile
+    val pattern = pathPattern.name
+    val parentDir = pathPattern.parentFile
     val matcher = FileSystems.getDefault().getPathMatcher("glob:$pattern")
     val listFiles = parentDir.listFiles { f -> matcher.matches(f.toPath().fileName) }
     return listFiles ?: arrayOf()

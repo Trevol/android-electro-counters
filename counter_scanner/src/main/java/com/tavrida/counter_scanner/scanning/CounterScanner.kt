@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.Rect
 import android.graphics.RectF
-import com.tavrida.counter_scanner.DetectionsRecorder
+import com.tavrida.counter_scanner.TelemetryRecorder
 import com.tavrida.counter_scanner.ImageWithId
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
@@ -27,7 +27,7 @@ class CounterScanner(
     detector: ScreenDigitDetector,
     private val detectorRoi: DetectionRoi,
     stabilityThresholdMs: Long,
-    recorder: DetectionsRecorder?
+    recorder: TelemetryRecorder?
 ) : Closeable {
 
     private var stopped = false

@@ -13,11 +13,8 @@ import com.tavrida.counter_scanner.scanning.DetectionRoi
 import com.tavrida.electro_counters.counter_scanner.CounterScannerProvider2
 import com.tavrida.electro_counters.drawing.ScanResultDrawer
 import org.opencv.android.OpenCVLoader
-import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
-import kotlin.concurrent.withLock
 import kotlin.concurrent.write
 
 
@@ -64,8 +61,9 @@ class CameraActivityController(val context: Context) {
     private val storage = AppStorage(context, STORAGE_DIR)
 
     private val frameId = Id()
-    private var telemetryRecorder =
-        TelemetryRecorder(storage, enabled = recording.enabled)
+    var telemetryRecorder =
+        TelemetryRecorderImpl(storage, enabled = recording.enabled)
+        private set
 
     private val analyzeSteps = CallStep()
 

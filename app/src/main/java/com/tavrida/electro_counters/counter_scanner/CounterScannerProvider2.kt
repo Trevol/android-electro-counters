@@ -6,7 +6,7 @@ import android.util.Size
 import com.tavrida.counter_scanner.detection.ScreenDigitDetector
 import com.tavrida.counter_scanner.scanning.DetectionRoi
 import com.tavrida.counter_scanner.scanning.CounterScanner
-import com.tavrida.electro_counters.TelemetryRecorder
+import com.tavrida.electro_counters.TelemetryRecorderImpl
 import com.tavrida.electro_counters.detection.tflite.new_detector.TfliteDetector
 import java.io.FileInputStream
 import java.nio.ByteBuffer
@@ -17,7 +17,7 @@ class CounterScannerProvider2() {
     fun createScanner(
         context: Context,
         detectorRoi: DetectionRoi,
-        telemetryRecorder: TelemetryRecorder
+        telemetryRecorder: TelemetryRecorderImpl
     ) =
         CounterScanner(createDetector(context), detectorRoi, 500, telemetryRecorder)
 

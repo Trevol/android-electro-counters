@@ -4,7 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Point
 import android.graphics.RectF
 import android.util.Size
-import com.tavrida.counter_scanner.DetectionsRecorder
+import com.tavrida.counter_scanner.TelemetryRecorder
 import com.tavrida.counter_scanner.aggregation.AggregatedDetections
 import com.tavrida.counter_scanner.aggregation.AggregatingBoxGroupingDigitExtractor
 import com.tavrida.counter_scanner.detection.DigitDetectionResult
@@ -24,7 +24,7 @@ internal class DetectorJob(
     private val digitExtractor: AggregatingBoxGroupingDigitExtractor,
     val skipDigitsOutsideScreen: Boolean,
     val skipDigitsNearImageEdges: Boolean,
-    val recorder: DetectionsRecorder?,
+    val recorder: TelemetryRecorder?,
 ) {
     val input = LinkedBlockingQueue<DetectorJobInputItem>()
     val output = LinkedBlockingQueue<DetectorJobOutputItem>()

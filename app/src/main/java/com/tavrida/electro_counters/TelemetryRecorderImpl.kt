@@ -1,29 +1,30 @@
 package com.tavrida.electro_counters
 
-import com.tavrida.counter_scanner.DetectionsRecorder
+import com.tavrida.counter_scanner.TelemetryRecorder
 import com.tavrida.counter_scanner.ImageWithId
 import com.tavrida.counter_scanner.detection.DigitDetectionResult
 import com.tavrida.counter_scanner.detection.ScreenDigitDetectionResult
 import com.tavrida.counter_scanner.scanning.CounterScaningResult
 import com.tavrida.utils.Timestamp
 import com.tavrida.utils.saveAsJpeg
-import com.tavrida.utils.saveAsRawPixelData
 import com.tavrida.utils.zeroPad
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
-class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var enabled: Boolean) :
-    DetectionsRecorder {
+class TelemetryRecorderImpl(
+    storage: AppStorage,
+    subDir: String = "recording",
+    var enabled: Boolean
+) :
+    TelemetryRecorder {
 
     inline val disabled get() = !enabled
-    private val framesDir = File(storage.root, subDir)
-    private var sessionDir = File("", "")
-    private var sessionDirCreated = false
-
+    private val storageSubDir = File(storage.root, subDir)
+    var sessionDir: File? = null
+        private set
     private var framesRecordedInSession = 0
-    private var sessionId = ""
 
     fun toggleSession(started: Boolean) {
         if (started) {
@@ -33,9 +34,8 @@ class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var e
 
     private fun newSession() {
         framesRecordedInSession = 0
-        sessionId = Timestamp.current()
-        sessionDirCreated = false
-        sessionDir = File(framesDir, sessionId)
+        val sessionId = Timestamp.current()
+        sessionDir = File(storageSubDir, sessionId).also { it.mkdirs() }
     }
 
     private inline fun baseName(frameId: Int) = frameId.zeroPad(FRAME_POS_LEN)
@@ -45,20 +45,19 @@ class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var e
             return
         }
         checkMaxFrames()
-        createSessionDirIfNeeded()
 
-        /*baseName(frameWithId.id)
-            .let { paddedPos ->
-                File(sessionDir, "${paddedPos}.jpg")
-            }.also { f ->
-                frameWithId.image.saveAsJpeg(f, JPEG_QUALITY)
-            }*/
         baseName(frameWithId.id)
+            .let { baseName ->
+                File(sessionDir, "${baseName}.jpg")
+            }.also { fn ->
+                frameWithId.image.saveAsJpeg(fn, JPEG_QUALITY)
+            }
+        /*baseName(frameWithId.id)
             .let { paddedPos ->
                 File(sessionDir, "${paddedPos}.pixel_data")
             }.also { f ->
                 frameWithId.image.saveAsRawPixelData(f)
-            }
+            }*/
 
         framesRecordedInSession++
     }
@@ -112,20 +111,6 @@ class TelemetryRecorder(storage: AppStorage, subDir: String = "recording", var e
         }.also { f ->
             item.toJson().saveTo(f)
         }
-    }
-
-    @Serializable
-    internal data class RecordItem(
-        val frameId: Int,
-        val scanResult: CounterScaningResult,
-        val analyzeStepMs: Long
-    )
-
-    private fun createSessionDirIfNeeded() {
-        if (sessionDirCreated) {
-            return
-        }
-        sessionDir!!.mkdirs()
     }
 
     private fun checkMaxFrames() {
